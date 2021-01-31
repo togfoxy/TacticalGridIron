@@ -1,0 +1,2 @@
+NPP_SAVE
+NPP_RUN "D:\Program Files\LOVE\love.exe" "$(CURRENT_DIRECTORY)" --console
