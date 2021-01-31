@@ -1,0 +1,2 @@
+NPP_Save
+"D:\Program Files\LOVE" "$(CURRENT_DIRECTORY)"
