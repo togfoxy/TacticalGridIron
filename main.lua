@@ -31,6 +31,15 @@ score.yardstogo = 10
 
 objects = {}
 objects.ball = {}
+
+football = {}
+football.x = nil
+football.y = nil
+football.targetx = nil
+football.targety = nil
+football.carriedby = nil
+football.airborne = nil
+
 intBallCarrier = 1		-- this is the player index that holds the ball. 0 means forming up and not yet snapped.
 fltPersonWidth = 1.5
 bolPlayOver = false
@@ -69,6 +78,7 @@ function InstantiatePlayers()
 		
 		objects.ball[i].fallendown = false
 		objects.ball[i].balance = 5	-- this is a percentage eg 5% chance of falling down
+		objects.ball[i].currentaction = "forming"
 		
 		-- the physics model tracks actual velx and vely so we don't need to track that.
 		-- we do need to track the desired velx and vely
@@ -152,6 +162,9 @@ function CustomisePlayers()
 			objects.ball[intCounter].maxpossibleV = 13.7					-- max velocity possible for this position
 			objects.ball[intCounter].maxV = love.math.random(12.2,13.7)		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1932							-- maximum force (how much force to apply to make them move)
+			
+		-- opposing team
+		
 		elseif intCounter == 12 or intCounter == 13 then
 			objects.ball[intCounter].positionletters = "DT"
 			objects.ball[intCounter].body:setMass(love.math.random(129,149))	-- kilograms
@@ -189,13 +202,13 @@ function CustomisePlayers()
 			objects.ball[intCounter].maxV = love.math.random(14.8,16.3)		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1467							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 21 then
-			objects.ball[intCounter].positionletters = "SS"
+			objects.ball[intCounter].positionletters = "S"
 			objects.ball[intCounter].body:setMass(love.math.random(80,100))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.1					-- max velocity possible for this position
 			objects.ball[intCounter].maxV = love.math.random(14.6,16.1)		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1449	
 		elseif intCounter == 22 then
-			objects.ball[intCounter].positionletters = "FS"
+			objects.ball[intCounter].positionletters = "S"
 			objects.ball[intCounter].body:setMass(love.math.random(80,100))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.1					-- max velocity possible for this position
 			objects.ball[intCounter].maxV = love.math.random(14.6,16.1)		-- max velocity possible for this player (this persons limitations)
@@ -282,7 +295,7 @@ function DrawStadium()
 	love.graphics.setColor(1, 1, 1,1)
 	love.graphics.print (strText,intDownsX,intDownsY)
 end
-
+	
 function DrawAllPlayers()
 
 	for i = 1, intNumOfPlayers do
@@ -333,6 +346,17 @@ function DrawPlayersVelocity()
 	
 	end
 
+end
+
+function SetPlayerTargets()
+
+	if strGameState = "FormingUp" then
+		SetFormingUpTargets()
+	end
+	
+	if strGameState = "Snapped" then
+		SetSnappedTargets()
+	end
 end
 
 function SetFormingUpTargets()
@@ -427,6 +451,153 @@ function SetFormingUpTargets()
 	-- player 22 = right safety 
 	objects.ball[22].targetcoordX = SclFactor(fltCentreLineY + 4)	 -- left 'wing'
 	objects.ball[22].targetcoordY = SclFactor(intScrimmageY - 17)		-- just behind scrimmage	
+
+end
+
+
+function SetCornerBackTargets()
+	-- assumes game state is not 'forming'		--! I could make this
+	
+	for i = 19,20 do	-- CB's are number 19 and 20
+		if objects.ball[i].positionletters = "CB" then		-- unnecessary if statement but put here for safety
+	
+			if strGameState = "Looking" then		-- QB is looking --! need to set this currentaction value on the snap event
+				--find the nearest ACTIVE WR and chase him/her
+				intWR = DetermineClosestPlayer(i, "WR")	-- find the closest Wide Receiver to player i. Returns the index (player number)
+				
+				objects.ball[i].targetcoordX = (objects.ball[intWR].body:getX())	-- chase closest WR
+				objects.ball[i].targetcoordY = (objects.ball[intWR].body:getY())	
+			end
+			
+			if strGameState = "Running" then	-- the ball carrier is running for the LoS
+				--set target to the runner
+				objects.ball[i].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase runner
+				objects.ball[i].targetcoordY = (objects.ball[intBallCarrier].body:getY())				
+			end
+			
+			if strGameState = "Airborne" then	-- ball is thrown and still in the air
+				-- run to where the ball will land
+				objects.ball[i].targetcoordX = football.targetx		--! need to set this on a mouse click
+				objects.ball[i].targetcoordY = football.targety					
+			end
+		end
+	end
+
+
+
+
+end
+
+
+
+function SetSnappedTargets()
+	-- instantiate other game state information
+	-- player 1 = QB
+	-- objects.ball[1].targetcoordX = SclFactor(fltCentreLineY - 2)	 
+	-- objects.ball[1].targetcoordY = SclFactor(intScrimmageY + 10)
+	
+	-- player 2 = WR (left closest to centre)
+	objects.ball[2].targetcoordX = SclFactor(fltCentreLineY - 17)	 
+	objects.ball[2].targetcoordY = SclFactor(intScrimmageY -38)		
+
+	-- player 3 = WR (right)
+	objects.ball[3].targetcoordX = SclFactor(fltCentreLineY + 23)	 
+	objects.ball[3].targetcoordY = SclFactor(intScrimmageY -20)	
+	--print("Player 3 coords is " .. objects.ball[3].body:getX() .. "," .. objects.ball[20].body:getY() )
+	
+	-- player 4 = WR (left on outside)
+	objects.ball[4].targetcoordX = SclFactor(fltCentreLineY - 22)	 
+	objects.ball[4].targetcoordY = SclFactor(intScrimmageY - 15)		
+
+	-- player 5 = RB
+	objects.ball[5].targetcoordX = SclFactor(fltCentreLineY + 5)	 
+	objects.ball[5].targetcoordY = SclFactor(intScrimmageY + 5)		
+	
+	-- player 6 = TE (right side)
+	objects.ball[6].targetcoordX = SclFactor(fltCentreLineY + 5)	 
+	objects.ball[6].targetcoordY = SclFactor(intScrimmageY - 20)			
+	
+	-- player 7 = Centre
+	objects.ball[7].targetcoordX = SclFactor(fltCentreLineY)	 
+	objects.ball[7].targetcoordY = SclFactor(intScrimmageY - 20)			
+	
+	-- player 8 = left guard offense
+	objects.ball[8].targetcoordX = SclFactor(fltCentreLineY - 4)	 
+	objects.ball[8].targetcoordY = SclFactor(intScrimmageY -20)		
+	
+	-- player 9 = right guard offense
+	objects.ball[9].targetcoordX = SclFactor(fltCentreLineY + 4)	 
+	objects.ball[9].targetcoordY = SclFactor(intScrimmageY -20)			
+
+	-- player 10 = left tackle 
+	objects.ball[10].targetcoordX = SclFactor(fltCentreLineY - 8)	 
+	objects.ball[10].targetcoordY = SclFactor(intScrimmageY -20)			
+
+	-- player 11 = right tackle 
+	objects.ball[11].targetcoordX = SclFactor(fltCentreLineY -2)	 
+	objects.ball[11].targetcoordY = SclFactor(intScrimmageY -20)			
+
+-- now for the visitors
+
+	-- player 12 = Left tackle (left side of screen)
+	objects.ball[12].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase QB	 
+	objects.ball[12].targetcoordY = (objects.ball[intBallCarrier].body:getY())
+	
+	-- player 13 = Right tackle
+	objects.ball[13].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase qb 
+	objects.ball[13].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
+
+	-- player 14 = Left end
+	objects.ball[14].targetcoordX = (objects.ball[intBallCarrier].body:getX())	 -- chase qb
+	objects.ball[14].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
+	
+	-- player 15 = Right end
+	objects.ball[15].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase qb	 
+	objects.ball[15].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
+
+	if not objects.ball[5].fallendown then	-- if RB has not fallen then target the RB
+		objects.ball[16].targetcoordX = (objects.ball[5].body:getX())	-- chases running back
+		objects.ball[16].targetcoordY = (objects.ball[5].body:getY())	
+	else
+		objects.ball[12].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase QB	 
+		objects.ball[12].targetcoordY = (objects.ball[intBallCarrier].body:getY())	
+	end
+		
+	-- Left outside LB
+	objects.ball[17].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- line up with the QB
+	if (objects.ball[1].body:getY() - objects.ball[17].body:getY()) then	-- check distance to QB
+		objects.ball[17].targetcoordY = SclFactor(intScrimmageY - 10)
+	else
+		objects.ball[17].targetcoordY = (objects.ball[intBallCarrier].body:getY())	-- close in on QB if opportunity presents
+	end
+
+	-- player 18 = Right Outside LB
+	objects.ball[18].targetcoordX = (objects.ball[5].body:getX())	-- line up with the RB	 
+	objects.ball[18].targetcoordY = SclFactor(intScrimmageY - 10)				
+		
+	-- player 19 = Left CB
+	if not objects.ball[4].fallendown then
+		objects.ball[19].targetcoordX = (objects.ball[4].body:getX())	-- target WR (left on outside)	 
+		objects.ball[19].targetcoordY = (objects.ball[4].body:getY())
+	else
+		objects.ball[19].targetcoordX = (objects.ball[intBallCarrier].body:getX())	 -- chase qb
+		objects.ball[19].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
+	end
+	
+	
+	-- player 20 = right CB 
+	objects.ball[20].targetcoordX = (objects.ball[3].body:getX())	-- chase right WR	 
+	objects.ball[20].targetcoordY = (objects.ball[3].body:getY())		
+
+	-- player 21 = left safety 
+	objects.ball[21].targetcoordX = (objects.ball[2].body:getX())	 -- line up with inside left wide receiver
+	objects.ball[21].targetcoordY = SclFactor(intScrimmageY - 17)	
+
+
+	-- player 22 = right safety 
+	objects.ball[22].targetcoordX = (objects.ball[3].body:getX())	-- line up with right WR 
+	objects.ball[22].targetcoordY = SclFactor(intScrimmageY - 17)				
+		
 
 end
 
@@ -563,117 +734,6 @@ function SetPlayersSensors(bolNewSetting, playernumber)
 	if playernumber > 0 and playernumber < 23 then	-- this is a safety check
 		objects.ball[playernumber].fixture:setSensor(not bolNewSetting)
 	end
-end
-
-function SetSnappedTargets()
-	-- instantiate other game state information
-	-- player 1 = QB
-	-- objects.ball[1].targetcoordX = SclFactor(fltCentreLineY - 2)	 
-	-- objects.ball[1].targetcoordY = SclFactor(intScrimmageY + 10)
-	
-	-- player 2 = WR (left closest to centre)
-	objects.ball[2].targetcoordX = SclFactor(fltCentreLineY - 17)	 
-	objects.ball[2].targetcoordY = SclFactor(intScrimmageY -38)		
-
-	-- player 3 = WR (right)
-	objects.ball[3].targetcoordX = SclFactor(fltCentreLineY + 23)	 
-	objects.ball[3].targetcoordY = SclFactor(intScrimmageY -20)	
-	--print("Player 3 coords is " .. objects.ball[3].body:getX() .. "," .. objects.ball[20].body:getY() )
-	
-	-- player 4 = WR (left on outside)
-	objects.ball[4].targetcoordX = SclFactor(fltCentreLineY - 22)	 
-	objects.ball[4].targetcoordY = SclFactor(intScrimmageY - 15)		
-
-	-- player 5 = RB
-	objects.ball[5].targetcoordX = SclFactor(fltCentreLineY + 5)	 
-	objects.ball[5].targetcoordY = SclFactor(intScrimmageY + 5)		
-	
-	-- player 6 = TE (right side)
-	objects.ball[6].targetcoordX = SclFactor(fltCentreLineY + 5)	 
-	objects.ball[6].targetcoordY = SclFactor(intScrimmageY - 20)			
-	
-	-- player 7 = Centre
-	objects.ball[7].targetcoordX = SclFactor(fltCentreLineY)	 
-	objects.ball[7].targetcoordY = SclFactor(intScrimmageY - 20)			
-	
-	-- player 8 = left guard offense
-	objects.ball[8].targetcoordX = SclFactor(fltCentreLineY - 4)	 
-	objects.ball[8].targetcoordY = SclFactor(intScrimmageY -20)		
-	
-	-- player 9 = right guard offense
-	objects.ball[9].targetcoordX = SclFactor(fltCentreLineY + 4)	 
-	objects.ball[9].targetcoordY = SclFactor(intScrimmageY -20)			
-
-	-- player 10 = left tackle 
-	objects.ball[10].targetcoordX = SclFactor(fltCentreLineY - 8)	 
-	objects.ball[10].targetcoordY = SclFactor(intScrimmageY -20)			
-
-	-- player 11 = right tackle 
-	objects.ball[11].targetcoordX = SclFactor(fltCentreLineY -2)	 
-	objects.ball[11].targetcoordY = SclFactor(intScrimmageY -20)			
-
--- now for the visitors
-
-	-- player 12 = Left tackle (left side of screen)
-	objects.ball[12].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase QB	 
-	objects.ball[12].targetcoordY = (objects.ball[intBallCarrier].body:getY())
-	
-	-- player 13 = Right tackle
-	objects.ball[13].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase qb 
-	objects.ball[13].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
-
-	-- player 14 = Left end
-	objects.ball[14].targetcoordX = (objects.ball[intBallCarrier].body:getX())	 -- chase qb
-	objects.ball[14].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
-	
-	-- player 15 = Right end
-	objects.ball[15].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase qb	 
-	objects.ball[15].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
-
-	if not objects.ball[5].fallendown then	-- if RB has not fallen then target the RB
-		objects.ball[16].targetcoordX = (objects.ball[5].body:getX())	-- chases running back
-		objects.ball[16].targetcoordY = (objects.ball[5].body:getY())	
-	else
-		objects.ball[12].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase QB	 
-		objects.ball[12].targetcoordY = (objects.ball[intBallCarrier].body:getY())	
-	end
-		
-	-- Left outside LB
-	objects.ball[17].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- line up with the QB
-	if (objects.ball[1].body:getY() - objects.ball[17].body:getY()) then	-- check distance to QB
-		objects.ball[17].targetcoordY = SclFactor(intScrimmageY - 10)
-	else
-		objects.ball[17].targetcoordY = (objects.ball[intBallCarrier].body:getY())	-- close in on QB if opportunity presents
-	end
-
-	-- player 18 = Right Outside LB
-	objects.ball[18].targetcoordX = (objects.ball[5].body:getX())	-- line up with the RB	 
-	objects.ball[18].targetcoordY = SclFactor(intScrimmageY - 10)				
-		
-	-- player 19 = Left CB
-	if not objects.ball[4].fallendown then
-		objects.ball[19].targetcoordX = (objects.ball[4].body:getX())	-- target WR (left on outside)	 
-		objects.ball[19].targetcoordY = (objects.ball[4].body:getY())
-	else
-		objects.ball[19].targetcoordX = (objects.ball[intBallCarrier].body:getX())	 -- chase qb
-		objects.ball[19].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
-	end
-	
-	
-	-- player 20 = right CB 
-	objects.ball[20].targetcoordX = (objects.ball[3].body:getX())	-- chase right WR	 
-	objects.ball[20].targetcoordY = (objects.ball[3].body:getY())		
-
-	-- player 21 = left safety 
-	objects.ball[21].targetcoordX = (objects.ball[2].body:getX())	 -- line up with inside left wide receiver
-	objects.ball[21].targetcoordY = SclFactor(intScrimmageY - 17)	
-
-
-	-- player 22 = right safety 
-	objects.ball[22].targetcoordX = (objects.ball[3].body:getX())	-- line up with right WR 
-	objects.ball[22].targetcoordY = SclFactor(intScrimmageY - 17)				
-		
-
 end
 
 function ProcessKeyInput()
@@ -867,7 +927,7 @@ function love.update(dt)
 
 	if strGameState == "FormingUp" then
 		-- set/re-evaluate current target/destination
-		SetFormingUpTargets()
+		SetPlayerTargets()
 		MoveAllPlayers()
 		if bolAllPlayersFormed() then
 			--print("Ready to snap")
@@ -877,11 +937,11 @@ function love.update(dt)
 		end
 	end
 	
-	if strGameState == "Snapped" then
+	if strGameState == "Snapped" or strGameState = "Looking" then
 		
 		if intBallCarrier == 0 then intBallCarrier = 1 end	-- QB gets the ball
 		
-		SetSnappedTargets()	-- constantly adjust targets for snapped players
+		SetPlayerTargets()	-- constantly adjust targets for  players
 		
 		-- This will adjust the QB target and set bolKeyPressed = true if a key was pressed
 		ProcessKeyInput() 
@@ -945,6 +1005,11 @@ function love.update(dt)
 		end
 
 	end
+	
+	if strGameState == "Snapped" then
+		-- snapped and looking are almost the same thing. As soon as the snap - the QB starts looking
+		strGameState = "Looking"
+	end
 
 	-- update gameworld
 	if bolEndGame then
@@ -953,7 +1018,7 @@ function love.update(dt)
 		if strGameState == "FormingUp" then
 			world:update(dt) --this puts the world into motion
 		end
-		if strGameState == "Snapped" then
+		if strGameState == "Snapped" or strGameState = "Looking" then
 			if bolKeyPressed then
 				world:update(dt) --this puts the world into motion
 				world:setCallbacks(beginContact, endContact, preSolve, postSolve)		
