@@ -6,6 +6,8 @@ function button.spawn(flags)
 	
 	local colorRed, colorGreen, colorBlue, colorAlpha = flags.color.red or 255, flags.color.green or 255, flags.color.blue or 255, flags.color.alpha or 255
 	local border, borderColorRed, borderColorGreen, borderColorBlue, borderColorAlpha = false, nil, nil, nil, nil
+	
+	local borderWidth
 	if flags.border then
 		border, borderWidth = true, flags.border.width or 1
 		borderColorRed, borderColorGreen, borderColorBlue, borderColorAlpha = flags.border.red, flags.border.green, flags.border.blue, flags.border.alpha
@@ -101,8 +103,9 @@ function button.update(dt)
 			end
 
 			if buttonID.onBlur and buttonID.flags.hovering then
-				if (my + 1 > buttonID.yPos) and (my < buttonID.yPos + buttonID.height) and
-		      		(mx + 1 > buttonID.xPos) and (mx < buttonID.xPos + buttonID.width) then
+				if (my + 1 > buttonID.yPos) and (my < buttonID.yPos + buttonID.height) and (mx + 1 > buttonID.xPos) and (mx < buttonID.xPos + buttonID.width) then
+					-- do nothing
+					--!strict
 		      	else
 		      		button.onBlur(buttonID)
 				end

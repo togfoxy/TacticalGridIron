@@ -1,8 +1,10 @@
+--require "sstrict.sstrict"
 require "dabuton" --Require the library so we can use it.
 
-gameversion = "v0.03"
+gameversion = "v0.04"
 
 strGameState = "FormingUp"
+strMessageBox = "Players getting ready"	
 intNumOfPlayers = 22
 
 -- Stadium constants
@@ -12,6 +14,8 @@ intRightLineX = intLeftLineX + 53
 intTopPostY = 15	-- how many metres to leave at the top of the screen?
 intBottomPostY = 135
 fltCentreLineY = intLeftLineX + (53/2)	-- left line + half of the field
+intTopGoalY = 25
+intBottomGoalY = 125
 
 intScrimmageY = 105
 intFirstDownMarker = intScrimmageY - 10		-- yards
@@ -59,10 +63,11 @@ soundlost = love.audio.newSource("524661aceinetlostphase3.wav", "static")
 soundcheer:setVolume(0.3)		-- mp3 file is too loud. Will tweak it here.
 soundwin:setVolume(0.2)
 
+-- load images
+imgInstructions = love.graphics.newImage("instructions.png")
 footballimage = love.graphics.newImage("football.png")
 
 -- *******************************************************************************************************************
-
 
 function InstantiatePlayers()
 
@@ -298,11 +303,22 @@ function DrawStadium()
 	love.graphics.setLineWidth(1)	-- return width back to default	
 
 	-- draw score
-	local intScoreX = 105
-	local intScoreY = 50
+	local intScoreX = SclFactor(17)
+	local intScoreY = SclFactor(8)
 	local strText = "Downs: " .. score.downs .. " down and " .. score.yardstogo .. " yards to go. Plays: " .. score.plays
-	love.graphics.setColor(1, 1, 1,1)
+	love.graphics.setColor(1, 1, 1)
 	love.graphics.print (strText,intScoreX,intScoreY)
+	
+	-- draw messagebox
+	local intMsgX = SclFactor(25)
+	local intMsgY = SclFactor(11)
+	love.graphics.setColor(1, 1, 1)
+	love.graphics.print (strMessageBox,intMsgX,intMsgY)	
+
+	-- draw instructions
+	love.graphics.setColor(1, 1, 1,1)	
+	-- love.graphics.draw(imgInstructions, SclFactor(intRightLineX + 100),SclFactor(intTopPostY))	
+	love.graphics.draw(imgInstructions, (intRightLineX + 350),(intTopPostY + 300))	
 end
 	
 function DrawAllPlayers()
@@ -638,6 +654,34 @@ function SetCentreTargets()
 
 end
 
+function SetTETargets()
+	-- TE is player 6
+	
+	if strGameState == "Looking" then
+		objects.ball[6].targetcoordX = SclFactor(fltCentreLineY + 5)	 
+		objects.ball[6].targetcoordY = SclFactor(intScrimmageY - 20)	
+	end
+	
+	if strGameState == "Running" then
+	-- run with/infront of runner
+		objects.ball[5].targetcoordX = objects.ball[intBallCarrier].body:getX()
+		objects.ball[5].targetcoordY = objects.ball[intBallCarrier].body:getY() - SclFactor(7)	
+	end
+	
+	if strGameState == "Airborne" then
+	-- run to predicted ball location
+		objects.ball[5].targetcoordX = football.targetx
+		objects.ball[5].targetcoordY = football.targety	
+	end
+	
+	if intBallCarrier == 6 then
+		-- RUN!!
+		objects.ball[6].targetcoordX = objects.ball[6].body:getX()
+		objects.ball[6].targetcoordY = SclFactor(0)
+	end		
+	
+end
+
 function SetSnappedTargets()
 	-- instantiate other game state information
 	-- player 1 = QB
@@ -665,7 +709,8 @@ function SetSnappedTargets()
 	
 	-- player 6 = TE (right side)
 	objects.ball[6].targetcoordX = SclFactor(fltCentreLineY + 5)	 
-	objects.ball[6].targetcoordY = SclFactor(intScrimmageY - 20)			
+	objects.ball[6].targetcoordY = SclFactor(intScrimmageY - 20)	
+	SetTETargets()
 	
 	-- player 7 = Centre
 	objects.ball[7].targetcoordX = SclFactor(fltCentreLineY)	 
@@ -1010,7 +1055,7 @@ end
 function bolCarrierOutOfBounds()
 
 	-- check if ball carrier is out of bounds
-	if strGameState == "Snapped" or strGameState == "Looking" then
+	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Running" then
 		ballX = objects.ball[intBallCarrier].body:getX()
 		if ballX < SclFactor(intLeftLineX) or ballX > SclFactor(intRightLineX) then
 			-- oops - ball out of bounds
@@ -1086,7 +1131,7 @@ function UpdateBallPosition(dtime)
 	-- print("Dist to target: " .. disttotarget)
 	
 	if disttotarget < (intThrowSpeed * dtime) then
-		-- the ball is no target so move it there.
+		-- the ball is on target so move it there.
 		football.x = football.targetx
 		football.y = football.targety
 		
@@ -1118,18 +1163,22 @@ function UpdateBallPosition(dtime)
 		
 		intBallCarrier = closestplayer
 		football.carriedby = closestplayer
-		strGameState = "Running"	
+		strGameState = "Running"
+		strMessageBox = objects.ball[intBallCarrier].positionletters .. " is running with the ball"			
 		
 		--! for now, we'll just give the ball to that persons
 		if closestplayer > 11 then
 			-- oops - end play
 			bolPlayOver = true
-			print("Knocked down.")			
+			print("Knocked down.")
+			strMessageBox = "Ball was knocked down. Incomplete."
 		else
 			-- someone on the offense team caught the ball so that's okay
 		end
 	else
 		-- ball is not at the target yet
+		strMessageBox = "The ball is in the air ..."
+		
 		local ratio = disttotarget / (intThrowSpeed * dtime)
 		-- print("Dist/ ratio: " .. ratio .. " so going to mulitply the vector by " .. 1/ratio)
 
@@ -1139,14 +1188,12 @@ function UpdateBallPosition(dtime)
 
 	end
 	
-	-- print(football.x .. " " .. football.y)
-
-
 end
 
 function ResetGame()
 	if bolEndGame then
 		strGameState = "FormingUp"
+		strMessageBox = "Players getting ready"	
 		intScrimmageY = 105
 		intFirstDownMarker = intScrimmageY - 10		-- yards
 		SetPlayersSensors(false,0)	-- turn off collisions
@@ -1161,10 +1208,12 @@ function ResetGame()
 		football.carriedby = nil
 		football.airborne = nil
 		intBallCarrier = 0		-- this is the player index that holds the ball. 0 means forming up and not yet snapped.
+		bolCheerPlayed = false
 		bolPlayOver = false
 		bolEndGame = false
 		soundwin:stop()
 		soundlost:stop()
+
 	end
 end
 
@@ -1262,7 +1311,13 @@ function love.load()
 	
 	CustomisePlayers()
 	
+
+	
+	
+	
 	strGameState = "FormingUp"	-- this is not necessary here but just making sure
+	
+	
 
 end
 
@@ -1276,6 +1331,7 @@ function love.update(dt)
 		-- set/re-evaluate current target/destination
 		SetPlayerTargets()
 		MoveAllPlayers()
+	
 		if bolAllPlayersFormed() then
 			--print("Ready to snap")
 			strGameState = ("Snapped")
@@ -1283,7 +1339,9 @@ function love.update(dt)
 			football.carriedby = 1
 			SetPlayersSensors(true,0)	-- make players sense collisions
 			soundgo:play()
+			strMessageBox = "Ball snapped"		
 		end
+		
 	end
 	
 	if strGameState == "Looking" then
@@ -1291,6 +1349,7 @@ function love.update(dt)
 		if objects.ball[1].body:getY() < SclFactor(intScrimmageY + 3) then
 			-- QB is close to scrimmage - declare him a runner
 			strGameState = "Running"
+			strMessageBox = "Player is running with the ball"		
 		end
 	end
 	
@@ -1309,6 +1368,7 @@ function love.update(dt)
 			if strGameState == "Airborne" then
 				-- Update ball position i nthe air
 				UpdateBallPosition(dt)
+				
 			end			
 		end
 		
@@ -1319,12 +1379,14 @@ function love.update(dt)
 		if intBallCarrier > 0 then
 			if objects.ball[intBallCarrier].fallendown == true then
 				bolPlayOver = true
-				print("Ball carrier is tackled.")
+				--print("Ball carrier is tackled.")
+				strMessageBox = "The ball carrier was tackled."
 			end	
 		
 			if bolCarrierOutOfBounds() then
 				bolPlayOver = true
 				print("Ball carrier is out of bounds.")
+				strMessageBox = "Ball is out of bounds."
 			end
 		end
 		
@@ -1332,6 +1394,7 @@ function love.update(dt)
 			soundwhistle:play()
 			bolPlayOver = false
 			strGameState = "FormingUp"
+			
 
 			SetPlayersSensors(false,0)	-- turn off collisions
 			SetPlayersFallen(false)		-- everyone stands up
@@ -1340,10 +1403,12 @@ function love.update(dt)
 			score.downs = score.downs + 1
 			score.plays = score.plays + 1
 			
+			--adjust line of scrimmage
 			if intBallCarrier > 0 and intBallCarrier < 12 then
 				intScrimmageY = (objects.ball[intBallCarrier].body:getY() / fltScaleFactor ) 
 			end
 		
+			-- check if 1st down
 			if intScrimmageY < intFirstDownMarker then
 				-- print("LoS =" .. intScrimmageY .. " FDM = " .. intFirstDownMarker)
 				score.downs = 1
@@ -1351,23 +1416,38 @@ function love.update(dt)
 				intFirstDownMarker = intScrimmageY - 10
 			end
 
+			-- update yards to go
 			score.yardstogo = round((intScrimmageY - intFirstDownMarker),0) 
 			
 			-- check for end game
 			if score.downs > 4 then
 				print("Turnover on downs.")
+				strMessageBox = "Turnover on downs. Game over."	
 				bolEndGame = true
 				soundlost:play()
+			end
+			
+			-- check for touchback
+			if intBallCarrier > 0 and intBallCarrier < 12 then
+				--print(objects.ball[intBallCarrier].body:getY() / fltScaleFactor ,SclFactor(intTopGoalY) )
+				if (objects.ball[intBallCarrier].body:getY() / fltScaleFactor) > (intBottomGoalY) then
+					-- touch back
+					print("Touch back.")
+					strMessageBox = "Touch back. Game over."	
+					bolEndGame = true
+					soundlost:play()
+				end
 			end
 		end
 
 		if intBallCarrier > 0 and intBallCarrier < 12 then
-			if objects.ball[intBallCarrier].body:getY() < SclFactor(25) then		-- this 25 should be changed to something scalable
+			if objects.ball[intBallCarrier].body:getY() < SclFactor(intTopGoalY) then
 				-- touchdown
 				if not bolCheerPlayed then
 					soundcheer:play()
 					bolCheerPlayed = true
 					print("Touchdown!")
+					strMessageBox = "Touchdown!!! You win!"	
 					soundwin:play()
 				end
 				bolEndGame = true
@@ -1380,6 +1460,7 @@ function love.update(dt)
 	if strGameState == "Snapped" then
 		-- snapped and looking are almost the same thing. As soon as the snap - the QB starts looking
 		strGameState = "Looking"
+		strMessageBox = "The quarterback is looking for an opening"	
 	end
 
 	
@@ -1390,6 +1471,7 @@ function love.update(dt)
 	else
 		if strGameState == "FormingUp" then
 			world:update(dt) --this puts the world into motion
+					
 		end
 		if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 			if bolKeyPressed then
