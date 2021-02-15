@@ -1,3 +1,6 @@
+require "dabuton" --Require the library so we can use it.
+
+gameversion = "v0.03"
 
 strGameState = "FormingUp"
 intNumOfPlayers = 22
@@ -25,7 +28,7 @@ intVistingTeamColourG = 191
 intVistingTeamColourB = 0
 
 score = {}
-score.downs = 1
+score.downs = 1	-- default to '1'
 score.plays = 0
 score.yardstogo = 10
 
@@ -40,6 +43,8 @@ football.targety = nil
 football.carriedby = nil
 football.airborne = nil
 
+intThrowSpeed = 40
+
 intBallCarrier = 1		-- this is the player index that holds the ball. 0 means forming up and not yet snapped.
 fltPersonWidth = 1.5
 bolPlayOver = false
@@ -48,7 +53,11 @@ bolEndGame = false
 soundgo = love.audio.newSource("go.wav", "static") -- the "static" tells LÖVE to load the file into memory, good for short sound effects
 soundwhistle = love.audio.newSource("whistle.wav", "static") -- the "static" tells LÖVE to load the file into memory, good for short sound effects
 soundcheer = love.audio.newSource("cheer.mp3", "static") -- the "static" tells LÖVE to load the file into memory, good for short sound effects
-soundcheer:setVolume(0.2)		-- mp3 file is too loud. Will tweak it here.
+soundwin = love.audio.newSource("29DarkFantasyStudioTreasure.wav", "static")
+soundlost = love.audio.newSource("524661aceinetlostphase3.wav", "static")
+
+soundcheer:setVolume(0.3)		-- mp3 file is too loud. Will tweak it here.
+soundwin:setVolume(0.2)
 
 footballimage = love.graphics.newImage("football.png")
 
@@ -64,9 +73,9 @@ function InstantiatePlayers()
 	do
 		objects.ball[i] = {}
 		if i < 12 then
-			objects.ball[i].body = love.physics.newBody(world, SclFactor(love.math.random(15,60)), SclFactor(love.math.random(90,120)), "dynamic") --place the body in the center of the world and make it dynamic, so it can move around
+			objects.ball[i].body = love.physics.newBody(world, SclFactor(love.math.random(25,60)), SclFactor(love.math.random(105,120)), "dynamic") --place the body in the center of the world and make it dynamic, so it can move around
 		else
-			objects.ball[i].body = love.physics.newBody(world, SclFactor(love.math.random(30,65)), SclFactor(love.math.random(70,110)), "dynamic") --place the body in the center of the world and make it dynamic, so it can move around
+			objects.ball[i].body = love.physics.newBody(world, SclFactor(love.math.random(30,55)), SclFactor(love.math.random(85,110)), "dynamic") --place the body in the center of the world and make it dynamic, so it can move around
 		end
 		
 		objects.ball[i].body:setLinearDamping(0.7)	-- this applies braking force and removes inertia
@@ -279,7 +288,7 @@ function DrawStadium()
 	love.graphics.line(SclFactor(15),SclFactor(intScrimmageY),SclFactor(68), SclFactor(intScrimmageY))	
 	love.graphics.setLineWidth(1)	-- return width back to default
 	
-	-- draw first down marker 255 255 51
+	-- draw first down marker
 	local intRed = 255
 	local intGreen = 255
 	local intBlue = 51
@@ -289,11 +298,11 @@ function DrawStadium()
 	love.graphics.setLineWidth(1)	-- return width back to default	
 
 	-- draw score
-	local intDownsX = 150
-	local intDownsY = 50
-	local strText = "Downs: " .. score.downs .. " down and " .. score.yardstogo .. ". Plays: " .. score.plays
+	local intScoreX = 105
+	local intScoreY = 50
+	local strText = "Downs: " .. score.downs .. " down and " .. score.yardstogo .. " yards to go. Plays: " .. score.plays
 	love.graphics.setColor(1, 1, 1,1)
-	love.graphics.print (strText,intDownsX,intDownsY)
+	love.graphics.print (strText,intScoreX,intScoreY)
 end
 	
 function DrawAllPlayers()
@@ -309,18 +318,29 @@ function DrawAllPlayers()
 		else
 			love.graphics.setColor(intVistingTeamColourR/255, intVistingTeamColourG/255, intVistingTeamColourB/255) --set the drawing color
 		end	
+		
 		-- after setting team colours, override the QB colour
 		if i == 1 then
 			love.graphics.setColor(intHomeQBColourR/255, intHomeQBColourG/255, intHomeQBColourB/255) -- QB colour
 		end
+		
+		
 		-- draw player
 		love.graphics.circle("fill", objX, objY, objRadius)	
 		-- draw a cute black outline
 		love.graphics.setColor(0, 0, 0,0.5) --set the drawing color
 		love.graphics.circle("line", objX, objY, objRadius)
 		
+		-- draw their number
+		-- love.graphics.setColor(0, 0, 0,1) ---set the drawing color
+		-- love.graphics.print(i,objX-7,objY-7)
+		
+		-- draw their position
+		love.graphics.setColor(0, 0, 0,1) ---set the drawing color
+		love.graphics.print(objects.ball[i].positionletters,objX-7,objY-7)
+		
 		-- draw fallen down
-		if strGameState == "Snapped" then
+		if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 			if objects.ball[i].fallendown then
 				local markerradius = objects.ball[i].shape:getRadius()
 				markerradius = markerradius/2
@@ -350,11 +370,11 @@ end
 
 function SetPlayerTargets()
 
-	if strGameState = "FormingUp" then
+	if strGameState == "FormingUp" then
 		SetFormingUpTargets()
 	end
 	
-	if strGameState = "Snapped" then
+	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 		SetSnappedTargets()
 	end
 end
@@ -454,41 +474,169 @@ function SetFormingUpTargets()
 
 end
 
+function DetermineClosestPlayer(playernum, enemytype)
+	-- receives the player in question and the target type string (eg "WR") and finds the closest enemy player of that type
+	-- enemytype can be an empty string ("") which will search for ANY type
+	-- returns zero if none found
+	
+	local myclosestdist = 1000
+	local myclosesttarget = 0
+	
+	local currentplayerX = objects.ball[playernum].body:getX()
+	local currentplayerY = objects.ball[playernum].body:getY()
+	
+	-- set up loop to scan opposing team
+	if playernum > 11 then
+		
+		a = 1
+		b = 11
+		--print("Hello" .. a,b)		
+	else
+		a = 12
+		b = 22
+	end
+		
+	--print(playernum,a,b)
+	for i = a,b do
+		if not objects.ball[i].fallendown then
+			if objects.ball[i].positionletters == enemytype or enemytype == "" then
+				-- determine distance
+				local thisdistance = GetDistance(currentplayerX, currentplayerY, objects.ball[i].body:getX(), objects.ball[i].body:getY())
+				
+				if thisdistance < myclosestdist then
+					-- found a closer target. Make that one the focuse
+					myclosesttarget = i
+					myclosestdist = thisdistance
+					--print("Just set closest target for player " .. playernum .. " to " .. i)
+				end
+			end
+		end
+	end		-- for loop
+	
+	return myclosesttarget
+end
+
+function SetWRTargets()
+
+	for i = 2,4 do
+	
+		-- print("Setting target for WR " .. i)
+		if objects.ball[i].positionletters == "WR" then
+
+		
+			if strGameState == "Airborne" then	-- run to predicted ball location
+				objects.ball[i].targetcoordX = football.targetx
+				objects.ball[i].targetcoordY = football.targety
+				
+			end
+			
+			if strGameState == "Running" then	-- run in front of runner
+				objects.ball[i].targetcoordX = objects.ball[intBallCarrier].body:getX()
+				objects.ball[i].targetcoordY = objects.ball[intBallCarrier].body:getY() - SclFactor(7)
+			end
+			
+			if strGameState == "Looking" then
+				-- run route or if route finished then find seperation
+			end
+			
+			-- THIS MUST GO LAST so it can override the above
+			if intBallCarrier == i then
+				-- RUN!!
+				objects.ball[i].targetcoordX = objects.ball[i].body:getX()
+				objects.ball[i].targetcoordY = SclFactor(0)
+			end			
+	
+		end
+	end
+
+end
 
 function SetCornerBackTargets()
 	-- assumes game state is not 'forming'		--! I could make this
 	
 	for i = 19,20 do	-- CB's are number 19 and 20
-		if objects.ball[i].positionletters = "CB" then		-- unnecessary if statement but put here for safety
+		if objects.ball[i].positionletters == "CB" then		-- unnecessary if statement but put here for safety
 	
-			if strGameState = "Looking" then		-- QB is looking --! need to set this currentaction value on the snap event
+			if strGameState == "Looking" then		-- QB is looking --! need to set this currentaction value on the snap event
 				--find the nearest ACTIVE WR and chase him/her
 				intWR = DetermineClosestPlayer(i, "WR")	-- find the closest Wide Receiver to player i. Returns the index (player number)
 				
-				objects.ball[i].targetcoordX = (objects.ball[intWR].body:getX())	-- chase closest WR
-				objects.ball[i].targetcoordY = (objects.ball[intWR].body:getY())	
+				if intWR > 0 then
+					objects.ball[i].targetcoordX = (objects.ball[intWR].body:getX())	-- chase closest WR
+					objects.ball[i].targetcoordY = (objects.ball[intWR].body:getY())
+				end
 			end
 			
-			if strGameState = "Running" then	-- the ball carrier is running for the LoS
+			if strGameState == "Running" then	-- the ball carrier is running for the LoS
 				--set target to the runner
 				objects.ball[i].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase runner
 				objects.ball[i].targetcoordY = (objects.ball[intBallCarrier].body:getY())				
 			end
 			
-			if strGameState = "Airborne" then	-- ball is thrown and still in the air
+			if strGameState == "Airborne" then	-- ball is thrown and still in the air
 				-- run to where the ball will land
-				objects.ball[i].targetcoordX = football.targetx		--! need to set this on a mouse click
+				objects.ball[i].targetcoordX = football.targetx		-- need to set this on a mouse click
 				objects.ball[i].targetcoordY = football.targety					
 			end
 		end
 	end
+end
 
+function SetRunningBackTargets()
+	-- RB is player 5
 
+	if strGameState == "Looking" then
+		-- target nearest enemy
+		local intClosestEnemy = DetermineClosestPlayer(5, "")
+		--print("RB closest enemy is " .. intClosestEnemy)
+		objects.ball[5].targetcoordX = objects.ball[intClosestEnemy].body:getX()
+		objects.ball[5].targetcoordY = objects.ball[intClosestEnemy].body:getY()
+	end
+	
+	if strGameState == "Running" then
+		objects.ball[5].targetcoordX = objects.ball[intBallCarrier].body:getX()
+		objects.ball[5].targetcoordY = objects.ball[intBallCarrier].body:getY() - SclFactor(7)	
+	end
+	
+	if strGameState == "Airborne" then	-- run to predicted ball location
+		objects.ball[5].targetcoordX = football.targetx
+		objects.ball[5].targetcoordY = football.targety
+	end
 
+		-- THIS MUST GO LAST so it can override the above
+	if intBallCarrier == 5 then
+		-- RUN!!
+		objects.ball[5].targetcoordX = objects.ball[5].body:getX()
+		objects.ball[5].targetcoordY = SclFactor(0)
+	end	
 
 end
 
+function SetCentreTargets()
+	-- C is player 7
+	if strGameState == "Looking"  then
+		objects.ball[7].targetcoordX = objects.ball[7].body:getX()		-- stay in starting lane
+		objects.ball[7].targetcoordY = objects.ball[intBallCarrier].body:getY() - SclFactor(7)		
+	end
+	
+	if strGameState == "Running" then
+		objects.ball[5].targetcoordX = objects.ball[intBallCarrier].body:getX()
+		objects.ball[5].targetcoordY = objects.ball[intBallCarrier].body:getY() - SclFactor(7)	
+	end
+	
+	if strGameState == "Airborne" then	-- run to predicted ball location
+		objects.ball[5].targetcoordX = football.targetx
+		objects.ball[5].targetcoordY = football.targety
+	end	
 
+	-- THIS MUST GO LAST so it can override the above
+	if intBallCarrier == 5 then
+		-- RUN!!
+		objects.ball[5].targetcoordX = objects.ball[5].body:getX()
+		objects.ball[5].targetcoordY = SclFactor(0)
+	end	
+
+end
 
 function SetSnappedTargets()
 	-- instantiate other game state information
@@ -507,11 +655,13 @@ function SetSnappedTargets()
 	
 	-- player 4 = WR (left on outside)
 	objects.ball[4].targetcoordX = SclFactor(fltCentreLineY - 22)	 
-	objects.ball[4].targetcoordY = SclFactor(intScrimmageY - 15)		
+	objects.ball[4].targetcoordY = SclFactor(intScrimmageY - 15)
+	SetWRTargets()	-- Let the WR routes set and then overright them here
 
 	-- player 5 = RB
 	objects.ball[5].targetcoordX = SclFactor(fltCentreLineY + 5)	 
 	objects.ball[5].targetcoordY = SclFactor(intScrimmageY + 5)		
+	SetRunningBackTargets()
 	
 	-- player 6 = TE (right side)
 	objects.ball[6].targetcoordX = SclFactor(fltCentreLineY + 5)	 
@@ -519,7 +669,8 @@ function SetSnappedTargets()
 	
 	-- player 7 = Centre
 	objects.ball[7].targetcoordX = SclFactor(fltCentreLineY)	 
-	objects.ball[7].targetcoordY = SclFactor(intScrimmageY - 20)			
+	objects.ball[7].targetcoordY = SclFactor(intScrimmageY - 20)
+	SetCentreTargets()
 	
 	-- player 8 = left guard offense
 	objects.ball[8].targetcoordX = SclFactor(fltCentreLineY - 4)	 
@@ -540,69 +691,65 @@ function SetSnappedTargets()
 -- now for the visitors
 
 	-- player 12 = Left tackle (left side of screen)
-	objects.ball[12].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase QB	 
-	objects.ball[12].targetcoordY = (objects.ball[intBallCarrier].body:getY())
-	
-	-- player 13 = Right tackle
-	objects.ball[13].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase qb 
-	objects.ball[13].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
-
-	-- player 14 = Left end
-	objects.ball[14].targetcoordX = (objects.ball[intBallCarrier].body:getX())	 -- chase qb
-	objects.ball[14].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
-	
-	-- player 15 = Right end
-	objects.ball[15].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase qb	 
-	objects.ball[15].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
-
-	if not objects.ball[5].fallendown then	-- if RB has not fallen then target the RB
-		objects.ball[16].targetcoordX = (objects.ball[5].body:getX())	-- chases running back
-		objects.ball[16].targetcoordY = (objects.ball[5].body:getY())	
-	else
+	if strGameState ~= "Airborne" then
 		objects.ball[12].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase QB	 
-		objects.ball[12].targetcoordY = (objects.ball[intBallCarrier].body:getY())	
-	end
+		objects.ball[12].targetcoordY = (objects.ball[intBallCarrier].body:getY())
 		
-	-- Left outside LB
-	objects.ball[17].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- line up with the QB
-	if (objects.ball[1].body:getY() - objects.ball[17].body:getY()) then	-- check distance to QB
-		objects.ball[17].targetcoordY = SclFactor(intScrimmageY - 10)
-	else
-		objects.ball[17].targetcoordY = (objects.ball[intBallCarrier].body:getY())	-- close in on QB if opportunity presents
-	end
+		-- player 13 = Right tackle
+		objects.ball[13].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase qb 
+		objects.ball[13].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
 
-	-- player 18 = Right Outside LB
-	objects.ball[18].targetcoordX = (objects.ball[5].body:getX())	-- line up with the RB	 
-	objects.ball[18].targetcoordY = SclFactor(intScrimmageY - 10)				
+		-- player 14 = Left end
+		objects.ball[14].targetcoordX = (objects.ball[intBallCarrier].body:getX())	 -- chase qb
+		objects.ball[14].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
 		
+		-- player 15 = Right end
+		objects.ball[15].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase qb	 
+		objects.ball[15].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
+
+		if not objects.ball[5].fallendown then	-- if RB has not fallen then target the RB
+			objects.ball[16].targetcoordX = (objects.ball[5].body:getX())	-- chases running back
+			objects.ball[16].targetcoordY = (objects.ball[5].body:getY())	
+		else
+			objects.ball[12].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase QB	 
+			objects.ball[12].targetcoordY = (objects.ball[intBallCarrier].body:getY())	
+		end
+			
+		-- Left outside LB
+		objects.ball[17].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- line up with the QB
+		if (objects.ball[1].body:getY() - objects.ball[17].body:getY()) then	-- check distance to QB
+			objects.ball[17].targetcoordY = SclFactor(intScrimmageY - 10)
+		else
+			objects.ball[17].targetcoordY = (objects.ball[intBallCarrier].body:getY())	-- close in on QB if opportunity presents
+		end
+
+		-- player 18 = Right Outside LB
+		objects.ball[18].targetcoordX = (objects.ball[5].body:getX())	-- line up with the RB	 
+		objects.ball[18].targetcoordY = SclFactor(intScrimmageY - 10)				
+			
+
+
+		-- player 21 = left safety 
+		objects.ball[21].targetcoordX = (objects.ball[2].body:getX())	 -- line up with inside left wide receiver
+		objects.ball[21].targetcoordY = SclFactor(intScrimmageY - 17)	
+
+
+		-- player 22 = right safety 
+		objects.ball[22].targetcoordX = (objects.ball[3].body:getX())	-- line up with right WR 
+		objects.ball[22].targetcoordY = SclFactor(intScrimmageY - 17)				
+	end
+	
 	-- player 19 = Left CB
-	if not objects.ball[4].fallendown then
-		objects.ball[19].targetcoordX = (objects.ball[4].body:getX())	-- target WR (left on outside)	 
-		objects.ball[19].targetcoordY = (objects.ball[4].body:getY())
-	else
-		objects.ball[19].targetcoordX = (objects.ball[intBallCarrier].body:getX())	 -- chase qb
-		objects.ball[19].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
-	end
-	
-	
-	-- player 20 = right CB 
-	objects.ball[20].targetcoordX = (objects.ball[3].body:getX())	-- chase right WR	 
-	objects.ball[20].targetcoordY = (objects.ball[3].body:getY())		
-
-	-- player 21 = left safety 
-	objects.ball[21].targetcoordX = (objects.ball[2].body:getX())	 -- line up with inside left wide receiver
-	objects.ball[21].targetcoordY = SclFactor(intScrimmageY - 17)	
-
-
-	-- player 22 = right safety 
-	objects.ball[22].targetcoordX = (objects.ball[3].body:getX())	-- line up with right WR 
-	objects.ball[22].targetcoordY = SclFactor(intScrimmageY - 17)				
-		
+	-- player 20 = Right CB
+	SetCornerBackTargets()	-- apply behavior tree		
 
 end
 
 function GetDistance(x1, y1, x2, y2)
 	-- this is real distance in pixels
+	-- returns a single number
+	
+	if (x1 == nil) or (y1 == nil) or (x2 == nil) or (y2 == nil) then return 0 end
 	
     local horizontal_distance = x1 - x2
     local vertical_distance = y1 - y2
@@ -631,6 +778,8 @@ end
 
 function MoveAllPlayers()
 
+--print("Moving players")
+
 	for i = 1,intNumOfPlayers do
 	
 		objX = objects.ball[i].body:getX()
@@ -645,6 +794,9 @@ function MoveAllPlayers()
 			-- player has arrived
 			if strGameState == "FormingUp" then
 				objects.ball[i].mode = "readyforsnap"
+			end
+			if strGameState == "Airborne" then
+				--! Wait, i guess!
 			end
 		end
 		
@@ -696,7 +848,7 @@ function MoveAllPlayers()
 			end
 			
 			-- if fallen down then no force
-			if strGameState == "Snapped" and objects.ball[i].fallendown then
+			if (strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" ) and objects.ball[i].fallendown then
 				intendedxforce = 0
 				intendedyforce = 0
 			end
@@ -738,6 +890,8 @@ end
 
 function ProcessKeyInput()
 
+--print("Proccessing keys")
+
 	-- make sure these are > than maxV 
 	local targetadjustmentamountX = 2	-- just one place to adjust this
 	local targetadjustmentamountY = 2	-- affects the speed of movement. I reckon dt should play a part here
@@ -759,7 +913,7 @@ function ProcessKeyInput()
 	end
 	]]--
 
-	if strGameState == "Snapped" then		
+	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then		
 		if love.keyboard.isDown("kp2")then
 			bolMoveDown = true
 			bolAnyKeyPressed = true
@@ -856,10 +1010,11 @@ end
 function bolCarrierOutOfBounds()
 
 	-- check if ball carrier is out of bounds
-	if strGameState == "Snapped" then
+	if strGameState == "Snapped" or strGameState == "Looking" then
 		ballX = objects.ball[intBallCarrier].body:getX()
 		if ballX < SclFactor(intLeftLineX) or ballX > SclFactor(intRightLineX) then
 			-- oops - ball out of bounds
+			-- print (ballX)
 			return true
 		else
 			return false
@@ -881,29 +1036,205 @@ function SetPlayersFallen(bolNewSetting)
 	end
 end
 
+function getAngle(currentx, currenty, targetx, targety)
+	-- receives two vectors and returns the angle (in rads??)
+
+	return math.atan2(targety - currenty, targetx - currentx)
+	
+
+end
+
+function getDistance(x1, y1, x2, y2)
+	-- this is real distance in pixels
+    local horizontal_distance = x1 - x2
+    local vertical_distance = y1 - y2
+    --Both of these work
+    local a = horizontal_distance * horizontal_distance
+    local b = vertical_distance ^2
+
+    local c = a + b
+    local distance = math.sqrt(c)
+    return distance
+end
+
+function ScaleVector(x,y,fctor)
+	-- Recieve a vector (0,0, -> x,y) and scale/multiply it by factor
+	-- returns a new vector (assuming origin)
+	return x * fctor, y * fctor
+end
+
+function UpdateBallPosition(dtime)
+	-- assumes a throwning speed of 45 mph = 20 metres/second
+	-- given current position x/y and a target positiong targetx/targety, move the football along that vector
+	--! will need to factor dt at some point
+	
+	-- determine angle to target
+	-- assume hypothenuse (20 * dt)
+	-- determine new x and new y
+
+	-- understand the vector for ball to target.
+	if football.targetx == nil or football.targety == nil then
+		vectorx = 0
+		vectorx = 0
+	else
+		vectorx = football.targetx - football.x
+		vectory = football.targety - football.y
+	end
+	
+	-- see how long this vector is
+	local disttotarget = getDistance(0, 0, vectorx, vectory)
+	-- print("Dist to target: " .. disttotarget)
+	
+	if disttotarget < (intThrowSpeed * dtime) then
+		-- the ball is no target so move it there.
+		football.x = football.targetx
+		football.y = football.targety
+		
+		--! will need to determine if ball is caught
+		--strGameState = ""	 --
+		football.targetx = nil
+		football.targety = nil
+		football.carriedby = 0
+		football.airborne = false	
+		intBallCarrier = 0
+		
+		-- see if anyone caught it
+		-- Determine who is closest to this position
+		local closestdistance = 1000
+		local closestplayer = 0
+		
+		for i = 1,22 do
+			-- check distance between this player and the ball
+			-- ignore anyone fallen down
+			if not objects.ball[i].fallendown then
+				mydistance = GetDistance(football.x,football.y, objects.ball[i].body:getX(),objects.ball[i].body:getY())
+				if mydistance < closestdistance then
+					-- we have a new candidate
+					closestdistance = mydistance
+					closestplayer = i
+				end
+			end
+		end
+		
+		intBallCarrier = closestplayer
+		football.carriedby = closestplayer
+		strGameState = "Running"	
+		
+		--! for now, we'll just give the ball to that persons
+		if closestplayer > 11 then
+			-- oops - end play
+			bolPlayOver = true
+			print("Knocked down.")			
+		else
+			-- someone on the offense team caught the ball so that's okay
+		end
+	else
+		-- ball is not at the target yet
+		local ratio = disttotarget / (intThrowSpeed * dtime)
+		-- print("Dist/ ratio: " .. ratio .. " so going to mulitply the vector by " .. 1/ratio)
+
+		scaledx,scaledy = ScaleVector(vectorx,vectory,(1/ratio))
+		football.x = football.x + scaledx
+		football.y = football.y + scaledy		
+
+	end
+	
+	-- print(football.x .. " " .. football.y)
+
+
+end
+
+function ResetGame()
+	if bolEndGame then
+		strGameState = "FormingUp"
+		intScrimmageY = 105
+		intFirstDownMarker = intScrimmageY - 10		-- yards
+		SetPlayersSensors(false,0)	-- turn off collisions
+		SetPlayersFallen(false)		-- everyone stands up
+		score.downs = 1
+		score.plays = 0
+		score.yardstogo = 10
+		football.x = nil
+		football.y = nil
+		football.targetx = nil
+		football.targety = nil
+		football.carriedby = nil
+		football.airborne = nil
+		intBallCarrier = 0		-- this is the player index that holds the ball. 0 means forming up and not yet snapped.
+		bolPlayOver = false
+		bolEndGame = false
+		soundwin:stop()
+		soundlost:stop()
+	end
+end
+
+function LoadButtons()
+	-- https://github.com/tjakka5/Dabuton
+	local flags = {
+		xPos = SclFactor(80), yPos = SclFactor(30), width = 100, height = 40, 
+		color = {red = 255, green = 0, blue = 0},
+		border = {width = 2, red = 1, green = 1, blue = 1},
+		onClick = {func = ResetGame, args = {}}
+	}
+	id = button.spawn(flags)	--Spawn the button
+end
+
+function love.mousereleased( x, y, button)
+	-- a mouse click means the ball might be thrown
+	if intBallCarrier == 1 then		-- only the QB gets to throw
+		if strGameState == "Snapped" or strGameState == "Looking" then
+			if button == 1 then	-- main mouse button
+				-- check if the mouse click is on-field and not out of bounds
+				if x > SclFactor(intLeftLineX) and x < SclFactor(intRightLineX) then
+					if y > SclFactor(intTopPostY) and y < SclFactor(intBottomPostY) then
+						strGameState = "Airborne"
+						football.x = objects.ball[intBallCarrier].body:getX()
+						football.y = objects.ball[intBallCarrier].body:getY()				
+						football.targetx = x
+						football.targety = y
+						football.carriedby = 0
+						football.airborne = true	
+						intBallCarrier = 0
+					end
+				end
+			end
+		end
+	end
+end
+
 function beginContact(a, b, coll)
 	-- Gets called when two fixtures begin to overlap
 	aindex = a:getUserData()	-- this gets the number of the player in contact
 	bindex = b:getUserData()
 	
-	if strGameState == "Snapped" then
+	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 	
 		-- don't do ANY contact for same team
 		if (aindex < 12 and bindex < 12) or (aindex > 11 and bindex > 11) then
 			-- same team. Do nothing!
 		else
-			-- check if player A falls down
-			if love.math.random(1,100) < objects.ball[aindex].balance then
-				-- oops - fell down!
-				objects.ball[aindex].fallendown = true
-				SetPlayersSensors(false, aindex)
-			end
-			-- check if player B falls down
-			if love.math.random(1,100) < objects.ball[bindex].balance then
-				-- oops - fell down!
-				objects.ball[bindex].fallendown = true
-				SetPlayersSensors(false, bindex)
-			end		
+			if objects.ball[aindex].fallendown or objects.ball[bindex].fallendown then	-- if either player has fallen down then do nothing
+				-- do nothing
+			else
+				local chanceoffalling = objects.ball[aindex].balance
+				if intBallCarrier == aindex then chanceoffalling = 85 end -- huge penalty if you hold the ball
+				
+				-- check if player A falls down
+				if love.math.random(1,100) < chanceoffalling then
+					-- oops - fell down!
+					objects.ball[aindex].fallendown = true
+					SetPlayersSensors(false, aindex)
+				end
+				
+				-- check if player B falls down
+				local chanceoffalling = objects.ball[aindex].balance
+				if intBallCarrier == bindex then chanceoffalling = 85 end -- huge penalty if you hold the ball
+				if love.math.random(1,100) < chanceoffalling then
+					-- oops - fell down!
+					objects.ball[bindex].fallendown = true
+					SetPlayersSensors(false, bindex)
+				end	
+			end			
 		end
 	end
 
@@ -911,10 +1242,22 @@ end
 
 function love.load()
 
-	--set window
-	void = love.window.setMode(SclFactor(83), SclFactor(150))
-	love.window.setTitle("Love football")
+	fltScaleFactor = 6	-- this is the ScaleFactor if window is 1920 / 1080
 	
+	local scrnWidth,scrnHeight = love.window.getDesktopDimensions(1)
+	local applyRatio = 1080 /scrnHeight
+	
+	-- print("applyRatio = " .. applyRatio)
+	
+	fltScaleFactor = fltScaleFactor / applyRatio	-- Scale the app to fit in the window
+	
+	--set window
+	void = love.window.setMode(SclFactor(120), SclFactor(150))
+	love.window.setTitle("Love football " .. gameversion)
+	
+	
+	LoadButtons()
+
 	InstantiatePlayers()
 	
 	CustomisePlayers()
@@ -925,6 +1268,10 @@ end
 
 function love.update(dt)
 
+--print(strGameState)
+
+	button.update()	--Update all buttons
+
 	if strGameState == "FormingUp" then
 		-- set/re-evaluate current target/destination
 		SetPlayerTargets()
@@ -932,14 +1279,25 @@ function love.update(dt)
 		if bolAllPlayersFormed() then
 			--print("Ready to snap")
 			strGameState = ("Snapped")
+			intBallCarrier = 1		-- QB gets the ball
+			football.carriedby = 1
 			SetPlayersSensors(true,0)	-- make players sense collisions
 			soundgo:play()
 		end
 	end
 	
-	if strGameState == "Snapped" or strGameState = "Looking" then
+	if strGameState == "Looking" then
+		-- need to see if QB has moved enough to actually be running
+		if objects.ball[1].body:getY() < SclFactor(intScrimmageY + 3) then
+			-- QB is close to scrimmage - declare him a runner
+			strGameState = "Running"
+		end
+	end
+	
+	
+	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 		
-		if intBallCarrier == 0 then intBallCarrier = 1 end	-- QB gets the ball
+		-- if intBallCarrier == 0 then intBallCarrier = 1 end	-- QB gets the ball
 		
 		SetPlayerTargets()	-- constantly adjust targets for  players
 		
@@ -947,19 +1305,27 @@ function love.update(dt)
 		ProcessKeyInput() 
 		if bolKeyPressed then
 			MoveAllPlayers()
+			
+			if strGameState == "Airborne" then
+				-- Update ball position i nthe air
+				UpdateBallPosition(dt)
+			end			
 		end
 		
+		-- ***************************************************
 		-- check for various triggers
 		
 		-- ball carrier is tackled	
-		if objects.ball[intBallCarrier].fallendown == true then
-			bolPlayOver = true
-			print("Ball carrier is tackled.")
-		end	
+		if intBallCarrier > 0 then
+			if objects.ball[intBallCarrier].fallendown == true then
+				bolPlayOver = true
+				print("Ball carrier is tackled.")
+			end	
 		
-		if bolCarrierOutOfBounds() then
-			bolPlayOver = true
-			print("Ball carrier is out of bounds.")
+			if bolCarrierOutOfBounds() then
+				bolPlayOver = true
+				print("Ball carrier is out of bounds.")
+			end
 		end
 		
 		if bolPlayOver then
@@ -974,35 +1340,40 @@ function love.update(dt)
 			score.downs = score.downs + 1
 			score.plays = score.plays + 1
 			
-			intScrimmageY = (objects.ball[intBallCarrier].body:getY() / fltScaleFactor )
-
-			-- check if travelled 10 yards
-			if objects.ball[intBallCarrier].body:getY() <= SclFactor(intScrimmageY - 10) then
-				-- reset downs
+			if intBallCarrier > 0 and intBallCarrier < 12 then
+				intScrimmageY = (objects.ball[intBallCarrier].body:getY() / fltScaleFactor ) 
+			end
+		
+			if intScrimmageY < intFirstDownMarker then
+				-- print("LoS =" .. intScrimmageY .. " FDM = " .. intFirstDownMarker)
 				score.downs = 1
-				score.yardstogo = 10
-				intFirstDownMarker = SclFactor(intScrimmageY - 10)
-			else
-				-- recalc yards to go
-				score.yardstogo = round(((objects.ball[intBallCarrier].body:getY() - SclFactor(intScrimmageY - 10)) / fltScaleFactor),0)
+			
+				intFirstDownMarker = intScrimmageY - 10
 			end
 
+			score.yardstogo = round((intScrimmageY - intFirstDownMarker),0) 
+			
 			-- check for end game
 			if score.downs > 4 then
 				print("Turnover on downs.")
 				bolEndGame = true
+				soundlost:play()
 			end
 		end
 
-		if objects.ball[intBallCarrier].body:getY() < SclFactor(25) then		-- this 25 should be changed to something scalable
-			-- touchdown
-			if not bolCheerPlayed then
-				soundcheer:play()
-				bolCheerPlayed = true
-				print("Touchdown!")
+		if intBallCarrier > 0 and intBallCarrier < 12 then
+			if objects.ball[intBallCarrier].body:getY() < SclFactor(25) then		-- this 25 should be changed to something scalable
+				-- touchdown
+				if not bolCheerPlayed then
+					soundcheer:play()
+					bolCheerPlayed = true
+					print("Touchdown!")
+					soundwin:play()
+				end
+				bolEndGame = true
 			end
-			bolEndGame = true
 		end
+		
 
 	end
 	
@@ -1011,45 +1382,70 @@ function love.update(dt)
 		strGameState = "Looking"
 	end
 
+	
 	-- update gameworld
 	if bolEndGame then
 		-- do nothing
+		--world:update(dt) --this puts the world into motion
 	else
 		if strGameState == "FormingUp" then
 			world:update(dt) --this puts the world into motion
 		end
-		if strGameState == "Snapped" or strGameState = "Looking" then
+		if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 			if bolKeyPressed then
 				world:update(dt) --this puts the world into motion
 				world:setCallbacks(beginContact, endContact, preSolve, postSolve)		
 			end
 		end
 	end
+	
+
 end
 
 function love.draw()
 
-	if strGameState == "FormingUp" or strGameState == "Snapped" then
+	if strGameState == "FormingUp" or strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 		DrawStadium()
 	end
 	
-	if strGameState == "FormingUp" or strGameState == "Snapped" then
+	if strGameState == "FormingUp" or strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 		DrawAllPlayers()
-		DrawPlayersVelocity()
+		--DrawPlayersVelocity()
 	end
 
-	if strGameState == "Snapped" then
-		love.graphics.setColor(1, 1, 1,1) --set the drawing color
-		love.graphics.draw(footballimage, objects.ball[intBallCarrier].body:getX(), objects.ball[intBallCarrier].body:getY(),0,0.33,0.33,5,25)	
+	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
+		-- draw football on ball carier
+		if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Running" then
+			-- draw football on top of carrier
+			love.graphics.setColor(1, 1, 1,1) --set the drawing color
+			love.graphics.draw(footballimage, objects.ball[intBallCarrier].body:getX(), objects.ball[intBallCarrier].body:getY(),0,0.33,0.33,5,25)	
+		end
 		
+		-- draw football in air
+		if strGameState == "Airborne" then
+			love.graphics.setColor(1, 1, 1,1) --set the drawing color
+			love.graphics.draw(footballimage, football.x, football.y,0,0.33,0.33,5,25)			
+		end
+			
 		-- draw QB target 
-		if strGameState == "Snapped" then
-			love.graphics.setColor(1, 0, 0,0.75) --set the drawing color
-			love.graphics.circle("line", objects.ball[1].targetcoordX, objects.ball[1].targetcoordY, objects.ball[1].shape:getRadius())		
-		end		
+		love.graphics.setColor(1, 0, 0,0.75) --set the drawing color
+		love.graphics.circle("line", objects.ball[1].targetcoordX, objects.ball[1].targetcoordY, objects.ball[1].shape:getRadius())		
+
+
+		-- draw ball target
+		if football.airborne == true then
+			love.graphics.setColor(0, 0, 1,1) --set the drawing color
+			love.graphics.circle("line", football.targetx, football.targety, SclFactor(fltPersonWidth))	
+		end
 
 	end
 	
+	if bolEndGame then
+		button.draw()	--Draw all buttons
+		-- draw text on buttons
+		love.graphics.setColor(0, 1, 0,1)
+		love.graphics.print ("Reset", SclFactor(85),SclFactor(32))
+	end	
 end
 
 
