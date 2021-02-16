@@ -1,7 +1,11 @@
 --require "sstrict.sstrict"
 require "dabuton" --Require the library so we can use it.
+Camera = require "hump.camera"
+fltCameraSmoothRate = 0.025	-- how fast does the camera zoom
+fltFinalCameraZoom = 1		-- the needed/required zoom rate
+fltCurrentCameraZoom = 1	-- the camera won't tell us it's zoom so we need to track it globally
 
-gameversion = "v0.04"
+gameversion = "v0.05"
 
 strGameState = "FormingUp"
 strMessageBox = "Players getting ready"	
@@ -13,7 +17,7 @@ intLeftLineX = 15
 intRightLineX = intLeftLineX + 53
 intTopPostY = 15	-- how many metres to leave at the top of the screen?
 intBottomPostY = 135
-fltCentreLineY = intLeftLineX + (53/2)	-- left line + half of the field
+fltCentreLineX = intLeftLineX + (53/2)	-- left line + half of the field
 intTopGoalY = 25
 intBottomGoalY = 125
 
@@ -399,93 +403,93 @@ function SetFormingUpTargets()
 	-- instantiate other game state information
 	
 	-- player 1 = QB
-	objects.ball[1].targetcoordX = SclFactor(fltCentreLineY)	 -- centre line
+	objects.ball[1].targetcoordX = SclFactor(fltCentreLineX)	 -- centre line
 	objects.ball[1].targetcoordY = SclFactor(intScrimmageY + 8)
 	
 	-- player 2 = WR (left closest to centre)
-	objects.ball[2].targetcoordX = SclFactor(fltCentreLineY - 20)	 -- left 'wing'
+	objects.ball[2].targetcoordX = SclFactor(fltCentreLineX - 20)	 -- left 'wing'
 	objects.ball[2].targetcoordY = SclFactor(intScrimmageY + 2)		-- just behind scrimmage
 
 	-- player 3 = WR (right)
-	objects.ball[3].targetcoordX = SclFactor(fltCentreLineY + 19)	 -- left 'wing'
+	objects.ball[3].targetcoordX = SclFactor(fltCentreLineX + 19)	 -- left 'wing'
 	objects.ball[3].targetcoordY = SclFactor(intScrimmageY + 2)		-- just behind scrimmage
 	
 	-- player 4 = WR (left on outside)
-	objects.ball[4].targetcoordX = SclFactor(fltCentreLineY - 24)	 -- left 'wing'
+	objects.ball[4].targetcoordX = SclFactor(fltCentreLineX - 24)	 -- left 'wing'
 	objects.ball[4].targetcoordY = SclFactor(intScrimmageY + 2)		-- just behind scrimmage
 
 	-- player 5 = RB
-	objects.ball[5].targetcoordX = SclFactor(fltCentreLineY)	 -- left 'wing'
+	objects.ball[5].targetcoordX = SclFactor(fltCentreLineX)	 -- left 'wing'
 	objects.ball[5].targetcoordY = SclFactor(intScrimmageY + 14)	-- just behind scrimmage	
 	
 	-- player 6 = TE (right side)
-	objects.ball[6].targetcoordX = SclFactor(fltCentreLineY + 13)	 -- left 'wing'
+	objects.ball[6].targetcoordX = SclFactor(fltCentreLineX + 13)	 -- left 'wing'
 	objects.ball[6].targetcoordY = SclFactor(intScrimmageY + 5)	-- just behind scrimmage		
 	
 	-- player 7 = Centre
-	objects.ball[7].targetcoordX = SclFactor(fltCentreLineY)	 -- left 'wing'
+	objects.ball[7].targetcoordX = SclFactor(fltCentreLineX)	 -- left 'wing'
 	objects.ball[7].targetcoordY = SclFactor(intScrimmageY + 2)		-- just behind scrimmage	
 	
 	-- player 8 = left guard
-	objects.ball[8].targetcoordX = SclFactor(fltCentreLineY - 4)	 -- left 'wing'
+	objects.ball[8].targetcoordX = SclFactor(fltCentreLineX - 4)	 -- left 'wing'
 	objects.ball[8].targetcoordY = SclFactor(intScrimmageY + 2)		-- just behind scrimmage
 	
 	-- player 9 = right guard 
-	objects.ball[9].targetcoordX = SclFactor(fltCentreLineY + 4)	 -- left 'wing'
+	objects.ball[9].targetcoordX = SclFactor(fltCentreLineX + 4)	 -- left 'wing'
 	objects.ball[9].targetcoordY = SclFactor(intScrimmageY +2)		-- just behind scrimmage	
 
 	-- player 10 = left tackle 
-	objects.ball[10].targetcoordX = SclFactor(fltCentreLineY - 8)	 -- left 'wing'
+	objects.ball[10].targetcoordX = SclFactor(fltCentreLineX - 8)	 -- left 'wing'
 	objects.ball[10].targetcoordY = SclFactor(intScrimmageY +4)		-- just behind scrimmage	
 
 	-- player 11 = right tackle 
-	objects.ball[11].targetcoordX = SclFactor(fltCentreLineY + 8)	 -- left 'wing'
+	objects.ball[11].targetcoordX = SclFactor(fltCentreLineX + 8)	 -- left 'wing'
 	objects.ball[11].targetcoordY = SclFactor(intScrimmageY +4)		-- just behind scrimmage	
 
 -- now for the visitors
 
 	-- player 12 = Left tackle (left side of screen)
-	objects.ball[12].targetcoordX = SclFactor(fltCentreLineY -2)	 -- centre line
+	objects.ball[12].targetcoordX = SclFactor(fltCentreLineX -2)	 -- centre line
 	objects.ball[12].targetcoordY = SclFactor(intScrimmageY - 2)
 	
 	-- player 13 = Right tackle
-	objects.ball[13].targetcoordX = SclFactor(fltCentreLineY +2)	 -- left 'wing'
+	objects.ball[13].targetcoordX = SclFactor(fltCentreLineX +2)	 -- left 'wing'
 	objects.ball[13].targetcoordY = SclFactor(intScrimmageY - 2)		-- just behind scrimmage
 
 	-- player 14 = Left end
-	objects.ball[14].targetcoordX = SclFactor(fltCentreLineY -6)	 -- left 'wing'
+	objects.ball[14].targetcoordX = SclFactor(fltCentreLineX -6)	 -- left 'wing'
 	objects.ball[14].targetcoordY = SclFactor(intScrimmageY - 2)		-- just behind scrimmage
 	
 	-- player 15 = Right end
-	objects.ball[15].targetcoordX = SclFactor(fltCentreLineY +6)	 -- left 'wing'
+	objects.ball[15].targetcoordX = SclFactor(fltCentreLineX +6)	 -- left 'wing'
 	objects.ball[15].targetcoordY = SclFactor(intScrimmageY - 2)		-- just behind scrimmage
 
 	-- player 16 = Inside LB
-	objects.ball[16].targetcoordX = SclFactor(fltCentreLineY)	 -- left 'wing'
+	objects.ball[16].targetcoordX = SclFactor(fltCentreLineX)	 -- left 'wing'
 	objects.ball[16].targetcoordY = SclFactor(intScrimmageY - 11)	-- just behind scrimmage	
 	
 	-- player 17 = Left Outside LB
-	objects.ball[17].targetcoordX = SclFactor(fltCentreLineY - 15)	 -- left 'wing'
+	objects.ball[17].targetcoordX = SclFactor(fltCentreLineX - 15)	 -- left 'wing'
 	objects.ball[17].targetcoordY = SclFactor(intScrimmageY - 10)	-- just behind scrimmage		
 	
 	-- player 18 = Right Outside LB
-	objects.ball[18].targetcoordX = SclFactor(fltCentreLineY +15)	 -- left 'wing'
+	objects.ball[18].targetcoordX = SclFactor(fltCentreLineX +15)	 -- left 'wing'
 	objects.ball[18].targetcoordY = SclFactor(intScrimmageY - 10)		-- just behind scrimmage	
 	
 	-- player 19 = Left CB
-	objects.ball[19].targetcoordX = SclFactor(fltCentreLineY -24)	 -- left 'wing'
+	objects.ball[19].targetcoordX = SclFactor(fltCentreLineX -24)	 -- left 'wing'
 	objects.ball[19].targetcoordY = SclFactor(intScrimmageY -18)	 -- just behind scrimmage
 	
 	-- player 20 = right CB 
-	objects.ball[20].targetcoordX = SclFactor(fltCentreLineY + 19)	 -- left 'wing'
+	objects.ball[20].targetcoordX = SclFactor(fltCentreLineX + 19)	 -- left 'wing'
 	objects.ball[20].targetcoordY = SclFactor(intScrimmageY -18)		-- just behind scrimmage	
 
 	-- player 21 = left safety 
-	objects.ball[21].targetcoordX = SclFactor(fltCentreLineY - 4)	 -- left 'wing'
+	objects.ball[21].targetcoordX = SclFactor(fltCentreLineX - 4)	 -- left 'wing'
 	objects.ball[21].targetcoordY = SclFactor(intScrimmageY - 17)		-- just behind scrimmage	
 
 	-- player 22 = right safety 
-	objects.ball[22].targetcoordX = SclFactor(fltCentreLineY + 4)	 -- left 'wing'
+	objects.ball[22].targetcoordX = SclFactor(fltCentreLineX + 4)	 -- left 'wing'
 	objects.ball[22].targetcoordY = SclFactor(intScrimmageY - 17)		-- just behind scrimmage	
 
 end
@@ -658,7 +662,7 @@ function SetTETargets()
 	-- TE is player 6
 	
 	if strGameState == "Looking" then
-		objects.ball[6].targetcoordX = SclFactor(fltCentreLineY + 5)	 
+		objects.ball[6].targetcoordX = SclFactor(fltCentreLineX + 5)	 
 		objects.ball[6].targetcoordY = SclFactor(intScrimmageY - 20)	
 	end
 	
@@ -685,52 +689,52 @@ end
 function SetSnappedTargets()
 	-- instantiate other game state information
 	-- player 1 = QB
-	-- objects.ball[1].targetcoordX = SclFactor(fltCentreLineY - 2)	 
+	-- objects.ball[1].targetcoordX = SclFactor(fltCentreLineX - 2)	 
 	-- objects.ball[1].targetcoordY = SclFactor(intScrimmageY + 10)
 	
 	-- player 2 = WR (left closest to centre)
-	objects.ball[2].targetcoordX = SclFactor(fltCentreLineY - 17)	 
+	objects.ball[2].targetcoordX = SclFactor(fltCentreLineX - 17)	 
 	objects.ball[2].targetcoordY = SclFactor(intScrimmageY -38)		
 
 	-- player 3 = WR (right)
-	objects.ball[3].targetcoordX = SclFactor(fltCentreLineY + 23)	 
+	objects.ball[3].targetcoordX = SclFactor(fltCentreLineX + 23)	 
 	objects.ball[3].targetcoordY = SclFactor(intScrimmageY -20)	
 	--print("Player 3 coords is " .. objects.ball[3].body:getX() .. "," .. objects.ball[20].body:getY() )
 	
 	-- player 4 = WR (left on outside)
-	objects.ball[4].targetcoordX = SclFactor(fltCentreLineY - 22)	 
+	objects.ball[4].targetcoordX = SclFactor(fltCentreLineX - 22)	 
 	objects.ball[4].targetcoordY = SclFactor(intScrimmageY - 15)
 	SetWRTargets()	-- Let the WR routes set and then overright them here
 
 	-- player 5 = RB
-	objects.ball[5].targetcoordX = SclFactor(fltCentreLineY + 5)	 
+	objects.ball[5].targetcoordX = SclFactor(fltCentreLineX + 5)	 
 	objects.ball[5].targetcoordY = SclFactor(intScrimmageY + 5)		
 	SetRunningBackTargets()
 	
 	-- player 6 = TE (right side)
-	objects.ball[6].targetcoordX = SclFactor(fltCentreLineY + 5)	 
+	objects.ball[6].targetcoordX = SclFactor(fltCentreLineX + 5)	 
 	objects.ball[6].targetcoordY = SclFactor(intScrimmageY - 20)	
 	SetTETargets()
 	
 	-- player 7 = Centre
-	objects.ball[7].targetcoordX = SclFactor(fltCentreLineY)	 
+	objects.ball[7].targetcoordX = SclFactor(fltCentreLineX)	 
 	objects.ball[7].targetcoordY = SclFactor(intScrimmageY - 20)
 	SetCentreTargets()
 	
 	-- player 8 = left guard offense
-	objects.ball[8].targetcoordX = SclFactor(fltCentreLineY - 4)	 
+	objects.ball[8].targetcoordX = SclFactor(fltCentreLineX - 4)	 
 	objects.ball[8].targetcoordY = SclFactor(intScrimmageY -20)		
 	
 	-- player 9 = right guard offense
-	objects.ball[9].targetcoordX = SclFactor(fltCentreLineY + 4)	 
+	objects.ball[9].targetcoordX = SclFactor(fltCentreLineX + 4)	 
 	objects.ball[9].targetcoordY = SclFactor(intScrimmageY -20)			
 
 	-- player 10 = left tackle 
-	objects.ball[10].targetcoordX = SclFactor(fltCentreLineY - 8)	 
+	objects.ball[10].targetcoordX = SclFactor(fltCentreLineX - 8)	 
 	objects.ball[10].targetcoordY = SclFactor(intScrimmageY -20)			
 
 	-- player 11 = right tackle 
-	objects.ball[11].targetcoordX = SclFactor(fltCentreLineY -2)	 
+	objects.ball[11].targetcoordX = SclFactor(fltCentreLineX -2)	 
 	objects.ball[11].targetcoordY = SclFactor(intScrimmageY -20)			
 
 -- now for the visitors
@@ -949,33 +953,24 @@ function ProcessKeyInput()
 	
 	local bolAnyKeyPressed = false
 
-	--[[
-	if strGameState == "FormingOnLoS" then
-		if love.keyboard.isDown("t") then
-			--tilt!
-			ExecuteTilt()
-		end
-	end
-	]]--
-
 	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then		
-		if love.keyboard.isDown("kp2")then
+		if love.keyboard.isDown("kp2") or love.keyboard.isDown('x') then
 			bolMoveDown = true
 			bolAnyKeyPressed = true
 		end
-		if love.keyboard.isDown("kp8") then
+		if love.keyboard.isDown("kp8") or love.keyboard.isDown('w')  then
 			bolMoveUp = true
 			bolAnyKeyPressed = true
 		end
-		if love.keyboard.isDown("kp4") then
+		if love.keyboard.isDown("kp4") or love.keyboard.isDown('a')  then
 			bolMoveLeft = true
 			bolAnyKeyPressed = true
 		end
-		if love.keyboard.isDown("kp6") then
+		if love.keyboard.isDown("kp6") or love.keyboard.isDown('d')  then
 			bolMoveRight = true
 			bolAnyKeyPressed = true
 		end	
-		if love.keyboard.isDown("kp5") then
+		if love.keyboard.isDown("kp5") or love.keyboard.isDown('s')  then
 			bolMoveWait = true
 			bolAnyKeyPressed = true
 		end
@@ -1042,9 +1037,7 @@ function ProcessKeyInput()
 		if objects.ball[1].targetcoordY < SclFactor(intTopPostY) then objects.ball[1].targetcoordY = SclFactor(intTopPostY) end
 		if objects.ball[1].targetcoordY > SclFactor(intBottomPostY) then objects.ball[1].targetcoordY = SclFactor(intBottomPostY) end
 	end
-	
-	
-	
+
 	if bolAnyKeyPressed == true then
 		bolKeyPressed = true
 	else
@@ -1217,6 +1210,60 @@ function ResetGame()
 	end
 end
 
+function AdjustCameraZoom(cam)
+	-- Receives a hump.Camera object, checks what the intended zoom is, what the real zoom is and then apply a new zoom with smoothing.
+	
+	if fltCurrentCameraZoom == fltFinalCameraZoom then
+		-- nothing to do
+	else
+		if fltCurrentCameraZoom < fltFinalCameraZoom then
+			fltCurrentCameraZoom = fltCurrentCameraZoom + fltCameraSmoothRate
+			if fltCurrentCameraZoom > fltFinalCameraZoom then	-- this bit checks to see if we actually zoomed past the target zoom
+				fltCurrentCameraZoom = fltFinalCameraZoom
+			end
+		end
+		if fltCurrentCameraZoom > fltFinalCameraZoom then
+			fltCurrentCameraZoom = fltCurrentCameraZoom - fltCameraSmoothRate
+			if fltCurrentCameraZoom < fltFinalCameraZoom then	-- this bit checks to see if we actually zoomed past the target zoom
+				fltCurrentCameraZoom = fltFinalCameraZoom
+			end
+		end
+	end
+	
+	camera:zoomTo(fltCurrentCameraZoom)	
+end
+
+function SetCameraView()
+
+	if strGameState == "FormingUp" then
+		camera:lookAt(SclFactor(fltCentreLineX),SclFactor(80)) 	-- centre of the field
+		fltFinalCameraZoom = 1
+	end
+	
+	if strGameState == "Snapped" or strGameState == "Looking" then
+		camera:lookAt(SclFactor(fltCentreLineX),SclFactor(intScrimmageY)) 
+		fltFinalCameraZoom = 1.25	
+	end
+	
+	if strGameState == "Airborne" then
+		camera:lookAt((football.x),(football.y)) 
+		fltFinalCameraZoom = 1.5
+	end
+	
+	if strGameState == "Running" then
+		camera:lookAt(objects.ball[intBallCarrier].body:getX(),objects.ball[intBallCarrier].body:getY())
+		fltFinalCameraZoom = 1.5
+	end	
+	
+	if bolEndGame then 
+		-- reset the camera to something sensible
+		fltFinalCameraZoom = 1 
+		camera:lookAt(SclFactor(fltCentreLineX), SclFactor(80))
+	end
+	
+	AdjustCameraZoom(camera)
+end
+
 function LoadButtons()
 	-- https://github.com/tjakka5/Dabuton
 	local flags = {
@@ -1228,7 +1275,11 @@ function LoadButtons()
 	id = button.spawn(flags)	--Spawn the button
 end
 
-function love.mousereleased( x, y, button)
+function love.mousereleased(x, y, button)
+
+	-- this overrides the screen x/y with the world x/y noting that the camera messes things up.
+	local x,y = camera:worldCoords(love.mouse.getPosition())
+
 	-- a mouse click means the ball might be thrown
 	if intBallCarrier == 1 then		-- only the QB gets to throw
 		if strGameState == "Snapped" or strGameState == "Looking" then
@@ -1311,9 +1362,8 @@ function love.load()
 	
 	CustomisePlayers()
 	
-
-	
-	
+	camera = Camera(objects.ball[1].body:getX(), objects.ball[1].body:getY())
+	camera.smoother = Camera.smooth.linear(100)
 	
 	strGameState = "FormingUp"	-- this is not necessary here but just making sure
 	
@@ -1326,7 +1376,9 @@ function love.update(dt)
 --print(strGameState)
 
 	button.update()	--Update all buttons
-
+	
+	SetCameraView()
+	
 	if strGameState == "FormingUp" then
 		-- set/re-evaluate current target/destination
 		SetPlayerTargets()
@@ -1385,7 +1437,7 @@ function love.update(dt)
 		
 			if bolCarrierOutOfBounds() then
 				bolPlayOver = true
-				print("Ball carrier is out of bounds.")
+				--print("Ball carrier is out of bounds.")
 				strMessageBox = "Ball is out of bounds."
 			end
 		end
@@ -1425,6 +1477,7 @@ function love.update(dt)
 				strMessageBox = "Turnover on downs. Game over."	
 				bolEndGame = true
 				soundlost:play()
+				fltFinalCameraZoom = 1
 			end
 			
 			-- check for touchback
@@ -1432,10 +1485,11 @@ function love.update(dt)
 				--print(objects.ball[intBallCarrier].body:getY() / fltScaleFactor ,SclFactor(intTopGoalY) )
 				if (objects.ball[intBallCarrier].body:getY() / fltScaleFactor) > (intBottomGoalY) then
 					-- touch back
-					print("Touch back.")
+					--print("Touch back.")
 					strMessageBox = "Touch back. Game over."	
 					bolEndGame = true
 					soundlost:play()
+					fltFinalCameraZoom = 1
 				end
 			end
 		end
@@ -1446,11 +1500,12 @@ function love.update(dt)
 				if not bolCheerPlayed then
 					soundcheer:play()
 					bolCheerPlayed = true
-					print("Touchdown!")
-					strMessageBox = "Touchdown!!! You win!"	
+					--print("Touchdown!")
 					soundwin:play()
 				end
 				bolEndGame = true
+				fltFinalCameraZoom = 1
+				strMessageBox = "Touchdown!!! You win!"
 			end
 		end
 		
@@ -1467,6 +1522,9 @@ function love.update(dt)
 	-- update gameworld
 	if bolEndGame then
 		-- do nothing
+		--world:update(dt) --this puts the world into motion
+		fltFinalCameraZoom = 1
+		SetCameraView()
 		--world:update(dt) --this puts the world into motion
 	else
 		if strGameState == "FormingUp" then
@@ -1485,6 +1543,7 @@ function love.update(dt)
 end
 
 function love.draw()
+	camera:attach()
 
 	if strGameState == "FormingUp" or strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 		DrawStadium()
@@ -1527,7 +1586,9 @@ function love.draw()
 		-- draw text on buttons
 		love.graphics.setColor(0, 1, 0,1)
 		love.graphics.print ("Reset", SclFactor(85),SclFactor(32))
-	end	
+	end
+
+	camera:detach()		
 end
 
 

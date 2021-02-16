@@ -1,6 +1,7 @@
 button = {}
 
 function button.spawn(flags)
+
 	local xPos, yPos = flags.xPos or error("No xPos specified"), flags.yPos or error("No yPos specified")
 	local width, height = flags.width or error("No width specified"), flags.height or error("No height specified")
 	
@@ -80,6 +81,8 @@ end
 
 function button.update(dt)
 	local mx, my = love.mouse.getPosition()
+	
+	mx,my = camera:worldCoords(love.mouse.getPosition())
 
 	for i, buttonID in ipairs(button) do
 		if buttonID.flags.active then
