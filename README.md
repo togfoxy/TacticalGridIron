@@ -8,7 +8,8 @@ Windows
 Installation
 ============
 
-1. Download zip file
+1. Download zip file from the RELEASES page of this github: 
+    https://github.com/togfoxy/LoveFootball/releases
 2. Unzip folder onto computer
 3. Right-click > Properties on the LFB.EXE file 
 4. UNBLOCK the file (button at the bottom of the properties window) and click OK
