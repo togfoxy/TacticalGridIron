@@ -38,6 +38,8 @@ When you click the field, a blue circle will show where you clicked.
 
 Keep your Quarterback away from the opposing team.
 
+When the ball is snapped, side step left or right and allow your running back (RB) room to charge forward.
+
 Red dots mean that player has been tackled and is on the ground (inactive). They won't move or contribute further to this play.
 
 When your front line collapses you are about to be rushed (sacked). You'll need to decide to a) run with the ball or b) throw the ball to an open player.
