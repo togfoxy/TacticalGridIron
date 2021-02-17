@@ -34,11 +34,11 @@ Tips
 
 The red circle shows where your Quarterback will run to. Use the NUMPAD keys to move to a new location.
 
-When you cick the field, a blue circle will show where you clicked.
+When you click the field, a blue circle will show where you clicked.
 
 Keep your Quarterback away from the opposing team.
 
-Red dots mean that player has been tackled and is on the ground (inactive).
+Red dots mean that player has been tackled and is on the ground (inactive). They won't move or contribute further to this play.
 
 When your front line collapses you are about to be rushed (sacked). You'll need to decide to a) run with the ball or b) throw the ball to an open player.
 
