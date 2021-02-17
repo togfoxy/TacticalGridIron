@@ -1,11 +1,12 @@
 --require "sstrict.sstrict"
+
+gameversion = "v0.06"
+
 require "dabuton" --Require the library so we can use it.
 Camera = require "hump.camera"
 fltCameraSmoothRate = 0.025	-- how fast does the camera zoom
 fltFinalCameraZoom = 1		-- the needed/required zoom rate
 fltCurrentCameraZoom = 1	-- the camera won't tell us it's zoom so we need to track it globally
-
-gameversion = "v0.05"
 
 strGameState = "FormingUp"
 strMessageBox = "Players getting ready"	
@@ -306,23 +307,36 @@ function DrawStadium()
 	love.graphics.line(SclFactor(15),SclFactor(intFirstDownMarker),SclFactor(68), SclFactor(intFirstDownMarker))	
 	love.graphics.setLineWidth(1)	-- return width back to default	
 
+	--DrawScores()
+	
+	-- draw instructions
+	love.graphics.setColor(1, 1, 1,1)	
+	-- love.graphics.draw(imgInstructions, SclFactor(intRightLineX + 100),SclFactor(intTopPostY))	
+	love.graphics.draw(imgInstructions, (intRightLineX + 350),(intTopPostY + 300), _, 0.5,0.5)	
+end
+
+function DrawScores()
+	-- draw the background box
+	local intBoxX = SclFactor(0)
+	local intBoxY = SclFactor(0)
+	local intScreenwidth,intscreenheight, _ = love.window.getMode()
+	love.graphics.setColor(0.3, 0.3, 0.3)
+	love.graphics.rectangle("fill", intBoxX,intBoxY,intScreenwidth, SclFactor(10)) -- x,y,width,height. Width is left/right. Height is top/down
+	
+
 	-- draw score
 	local intScoreX = SclFactor(17)
-	local intScoreY = SclFactor(8)
+	local intScoreY = SclFactor(2)
 	local strText = "Downs: " .. score.downs .. " down and " .. score.yardstogo .. " yards to go. Plays: " .. score.plays
 	love.graphics.setColor(1, 1, 1)
 	love.graphics.print (strText,intScoreX,intScoreY)
 	
 	-- draw messagebox
 	local intMsgX = SclFactor(25)
-	local intMsgY = SclFactor(11)
+	local intMsgY = SclFactor(5)
 	love.graphics.setColor(1, 1, 1)
-	love.graphics.print (strMessageBox,intMsgX,intMsgY)	
-
-	-- draw instructions
-	love.graphics.setColor(1, 1, 1,1)	
-	-- love.graphics.draw(imgInstructions, SclFactor(intRightLineX + 100),SclFactor(intTopPostY))	
-	love.graphics.draw(imgInstructions, (intRightLineX + 350),(intTopPostY + 300))	
+	love.graphics.print (strMessageBox,intMsgX,intMsgY)		
+	
 end
 	
 function DrawAllPlayers()
@@ -492,6 +506,8 @@ function SetFormingUpTargets()
 	objects.ball[22].targetcoordX = SclFactor(fltCentreLineX + 4)	 -- left 'wing'
 	objects.ball[22].targetcoordY = SclFactor(intScrimmageY - 17)		-- just behind scrimmage	
 
+	
+	CheckAllTargets()
 end
 
 function DetermineClosestEnemy(playernum, enemytype)
@@ -551,8 +567,12 @@ function SetWRTargets()
 			if strGameState == "Running" then	-- run in front of runner
 				-- target enemyt closest to the runner
 				local intTarget = DetermineClosestEnemy(intBallCarrier, "")	-- find the closest player to the runner
-				objects.ball[i].targetcoordX = objects.ball[intTarget].body:getX()
-				objects.ball[i].targetcoordY = objects.ball[intTarget].body:getY()				
+				if intTarget > 0 then
+					objects.ball[i].targetcoordX = objects.ball[intTarget].body:getX()
+					objects.ball[i].targetcoordY = objects.ball[intTarget].body:getY()
+				else
+					--! do this later
+				end
 			end
 			
 			if strGameState == "Looking" then
@@ -595,6 +615,8 @@ function SetCornerBackTargets()
 				if intWR > 0 then
 					objects.ball[i].targetcoordX = (objects.ball[intWR].body:getX())	-- chase closest WR
 					objects.ball[i].targetcoordY = (objects.ball[intWR].body:getY())
+				else
+					--! do this later
 				end
 			end
 			
@@ -620,16 +642,25 @@ function SetRunningBackTargets()
 	if strGameState == "Looking" then
 		-- target nearest enemy
 		local intClosestEnemy = DetermineClosestEnemy(5, "")
-		--print("RB closest enemy is " .. intClosestEnemy)
-		objects.ball[5].targetcoordX = objects.ball[intClosestEnemy].body:getX()
-		objects.ball[5].targetcoordY = objects.ball[intClosestEnemy].body:getY()
+		if intClosestEnemy > 0 then
+			objects.ball[5].targetcoordX = objects.ball[intClosestEnemy].body:getX()
+			objects.ball[5].targetcoordY = objects.ball[intClosestEnemy].body:getY()
+		else
+			--! do this later
+		
+		
+		end
 	end
 	
 	if strGameState == "Running" then
 		local intTarget = DetermineClosestEnemy(intBallCarrier, "")	-- find the closest player to the runner
-		print("RB closest target is " .. objects.ball[intTarget].positionletters)
-		objects.ball[5].targetcoordX = objects.ball[intTarget].body:getX()
-		objects.ball[5].targetcoordY = objects.ball[intTarget].body:getY()
+		if intTarget > 0 then
+			objects.ball[5].targetcoordX = objects.ball[intTarget].body:getX()
+			objects.ball[5].targetcoordY = objects.ball[intTarget].body:getY()
+		else
+			--! do this later
+		
+		end
 	end
 	
 	if strGameState == "Airborne" then	-- run to predicted ball location
@@ -730,13 +761,26 @@ function SetSafetyTargets()
 
 		-- position between the ball target and the goal linear
 		objects.ball[21].targetcoordX = football.targetx		-- need to set this on a mouse click
-		objects.ball[21].targetcoordY = football.targety - SclFactor(intTopGoalY)
+		objects.ball[21].targetcoordY = (football.targety - SclFactor(intTopGoalY)) / 2 + SclFactor(intTopGoalY)
 		
 		objects.ball[22].targetcoordX = football.targetx		-- need to set this on a mouse click
 		objects.ball[22].targetcoordY = football.targety - SclFactor(intTopGoalY)
 		
 	end	
 
+end
+
+function CheckAllTargets()	
+	-- makes sure all targets are on the field and not beyond the goal zones
+	for i = 1,intNumOfPlayers do
+		if objects.ball[i].targetcoordY < SclFactor(intTopPostY) then
+			objects.ball[i].targetcoordY = SclFactor(intTopPostY)
+		end
+		if objects.ball[i].targetcoordY > SclFactor(intBottomPostY) then
+			objects.ball[i].targetcoordY = SclFactor(intBottomPostY)
+		end
+	end
+	
 end
 
 function SetSnappedTargets()
@@ -824,6 +868,8 @@ function SetSnappedTargets()
 
 	-- #21 & #22
 	SetSafetyTargets()
+	
+	CheckAllTargets()	-- makes sure all targets are on the field and not beyond the goal zones
 end
 
 function GetDistance(x1, y1, x2, y2)
@@ -1195,7 +1241,7 @@ function UpdateBallPosition(dtime)
 		if closestplayer > 11 then
 			-- oops - end play
 			bolPlayOver = true
-			print("Knocked down.")
+			--print("Knocked down.")
 			strMessageBox = "Ball was knocked down. Incomplete."
 		else
 			-- someone on the offense team caught the ball so that's okay
@@ -1268,7 +1314,7 @@ end
 function SetCameraView()
 
 	if strGameState == "FormingUp" then
-		camera:lookAt(SclFactor(fltCentreLineX),SclFactor(80)) 	-- centre of the field
+		camera:lookAt(SclFactor(fltCentreLineX),SclFactor(70)) 	-- centre of the field
 		fltFinalCameraZoom = 1
 	end
 	
@@ -1490,6 +1536,7 @@ function love.update(dt)
 			--adjust line of scrimmage
 			if intBallCarrier > 0 and intBallCarrier < 12 then
 				intScrimmageY = (objects.ball[intBallCarrier].body:getY() / fltScaleFactor ) 
+				
 			end
 		
 			-- check if 1st down
@@ -1498,6 +1545,7 @@ function love.update(dt)
 				score.downs = 1
 			
 				intFirstDownMarker = intScrimmageY - 10
+				if intFirstDownMarker < intTopGoalY then intFirstDownMarker = intTopGoalY end
 			end
 
 			-- update yards to go
@@ -1575,11 +1623,12 @@ function love.update(dt)
 end
 
 function love.draw()
-	camera:attach()
+
+	camera:attach()	
 
 	if strGameState == "FormingUp" or strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 		DrawStadium()
-	end
+	end		
 	
 	if strGameState == "FormingUp" or strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 		DrawAllPlayers()
@@ -1620,7 +1669,9 @@ function love.draw()
 		love.graphics.print ("Reset", SclFactor(85),SclFactor(32))
 	end
 
-	camera:detach()		
+	camera:detach()	
+
+	DrawScores()	
 end
 
 
