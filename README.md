@@ -28,6 +28,8 @@ Use the mouse to click anywhere on the field to throw the ball.
 
 Use NUMPAD-5 or S key to advance time.
 
+You can only control the Quarterback. The rest of the players are bots.
+
 
 Tips
 ====
