@@ -1,0 +1,21 @@
+Set version in the code
+Add source code to github
+Delete old LOVE file
+Add source code to zip file, including sub folders
+Rename zip file to LFB.love
+Copy LFB.love to LOVE folders
+Delete old EXE file
+Drag onto batch file
+Add LFB.EXE to distribution zip file (remove old LFB.EXE)
+Rename the zip file to next version
+Test the EXE in the zip file
+Create a new release.
+- tag = v0.0x
+- release name = Love Football v0.0x
+Add release notes based on closed tickets
+Drag the zip file into the release on github
+Tick "This is a pre-release"
+Publish release
+Go to issue tracker and archive closed tickets
+
+** Done **
