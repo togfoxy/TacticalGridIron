@@ -32,9 +32,9 @@ Use NUMPAD-5 or S key to advance time.
 Tips
 ====
 
-The red circle shows where your Quarterback will run to. Use the NUMPAD keys to move to a new location.
+The red circle shows where your Quarterback will run to. Use the NUMPAD or WADX keys to move to a new location.
 
-When you click the field, a blue circle will show where you clicked.
+When you click the field with the mouse, a blue circle will show where you clicked. The Quarterback will instantly throw the ball.
 
 Keep your Quarterback away from the opposing team.
 
