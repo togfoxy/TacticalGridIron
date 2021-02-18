@@ -507,7 +507,7 @@ function SetFormingUpTargets()
 	objects.ball[22].targetcoordY = SclFactor(intScrimmageY - 17)		-- just behind scrimmage	
 
 	
-	CheckAllTargets()
+	CheckAllTargetsOnField()
 end
 
 function DetermineClosestEnemy(playernum, enemytype)
@@ -552,6 +552,74 @@ function DetermineClosestEnemy(playernum, enemytype)
 	return myclosesttarget
 end
 
+function SetPlayerTargetToAnotherPlayer(i,j, bolIncludeBuffer)
+	-- receives player index (the 'current' player) and set their target to player j and intercepts
+	-- if bolIncludeBuffer = true then player will leave a buffer (i.e. not tackle)
+	-- returns nothing (not a function)
+	-- the parent function needs to check if i or j have fallen down
+	
+	objects.ball[i].targetcoordX = objects.ball[j].body:getX()
+	objects.ball[i].targetcoordY = objects.ball[j].body:getY()	
+	
+	if bolIncludeBuffer then
+		-- build in buffer
+		
+		-- target is now player j but this causes the player to push or slow down the carrier so need to build
+		-- in some space
+		-- check what side of the field the player is on and don't cross over or run into the carrier
+		if objects.ball[i].body:getX() > objects.ball[j].body:getX() then
+			objects.ball[i].targetcoordX = objects.ball[i].targetcoordX + SclFactor(5)	-- build in some buffer
+		else
+			objects.ball[i].targetcoordX = objects.ball[i].targetcoordX - SclFactor(5)
+		end		
+	else
+		-- nothing more to do
+	end
+end
+
+function SetPlayerTargetToGoal(i)
+	-- receive a player index and set their pathway to the goal to score
+	
+	-- Apply a check where the first down marker is really close and runner "goes for it" without any avoidance
+	if objects.ball[i].body:getY() - intFirstDownMarker <= SclFactor(3) then
+		-- go for it
+		-- This is simple run straight ahead behavior
+		objects.ball[i].targetcoordX = objects.ball[i].body:getX()
+		objects.ball[i].targetcoordY = SclFactor(0)			
+	else
+		-- Enemy avoidance
+		-- Determine vector to goal
+		objects.ball[i].targetcoordX = objects.ball[i].body:getX()
+		objects.ball[i].targetcoordY = SclFactor(0)	
+
+		local finalvectorX = objects.ball[i].body:getX() - objects.ball[i].targetcoordX
+		local finalvectorY = objects.ball[i].body:getY() - objects.ball[i].targetcoordY
+		
+		for j = 12,intNumOfPlayers do
+			-- iterate through all active players (not fallen) and subtract that vector from the final vector
+			-- Determine vector to each enemy
+			if not objects.ball[j].fallendown then	-- ignore players that have fallen down
+				enemyvectorX = objects.ball[j].body:getX() - finalvectorX
+				enemyvectorY = objects.ball[j].body:getY() - finalvectorY
+			
+				-- Apply weightings based on distance
+				--!
+				
+				-- Subtract those vectors from the goal vector
+				finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,enemyvectorX,enemyvectorY)
+			end
+		end
+		
+		objects.ball[i].targetcoordX = finalvectorX
+		objects.ball[i].targetcoordY = finalvectorY	
+
+		-- Ensure runner doesn't run backwards
+		if objects.ball[i].targetcoordY > 0 then
+			objects.ball[i].targetcoordY = -10	--! some arbitrary value that should change
+		end
+	end
+end
+
 function SetWRTargets()
 
 	for i = 2,4 do
@@ -565,11 +633,10 @@ function SetWRTargets()
 			end
 			
 			if strGameState == "Running" then	-- run in front of runner
-				-- target enemyt closest to the runner
+				-- target enemy closest to the runner
 				local intTarget = DetermineClosestEnemy(intBallCarrier, "")	-- find the closest player to the runner
 				if intTarget > 0 then
-					objects.ball[i].targetcoordX = objects.ball[intTarget].body:getX()
-					objects.ball[i].targetcoordY = objects.ball[intTarget].body:getY()
+					SetPlayerTargetToAnotherPlayer(i,intTarget, true)
 				else
 					--! do this later
 				end
@@ -594,8 +661,7 @@ function SetWRTargets()
 			-- THIS MUST GO LAST so it can override the above
 			if intBallCarrier == i then
 				-- RUN!!
-				objects.ball[i].targetcoordX = objects.ball[i].body:getX()
-				objects.ball[i].targetcoordY = SclFactor(0)
+				SetPlayerTargetToGoal(i)
 			end			
 
 	end
@@ -613,8 +679,7 @@ function SetCornerBackTargets()
 				intWR = DetermineClosestEnemy(i, "WR")	-- find the closest Wide Receiver to player i. Returns the index (player number)
 				
 				if intWR > 0 then
-					objects.ball[i].targetcoordX = (objects.ball[intWR].body:getX())	-- chase closest WR
-					objects.ball[i].targetcoordY = (objects.ball[intWR].body:getY())
+					SetPlayerTargetToAnotherPlayer(i,intWR, false)
 				else
 					--! do this later
 				end
@@ -622,9 +687,7 @@ function SetCornerBackTargets()
 			
 			if strGameState == "Running" then	-- the ball carrier is running for the LoS
 				--set target to the runner
-
-				objects.ball[i].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase
-				objects.ball[i].targetcoordY = (objects.ball[intBallCarrier].body:getY())				
+				SetPlayerTargetToAnotherPlayer(i,intBallCarrier, false)
 			end
 			
 			if strGameState == "Airborne" then	-- ball is thrown and still in the air
@@ -643,20 +706,16 @@ function SetRunningBackTargets()
 		-- target nearest enemy
 		local intClosestEnemy = DetermineClosestEnemy(5, "")
 		if intClosestEnemy > 0 then
-			objects.ball[5].targetcoordX = objects.ball[intClosestEnemy].body:getX()
-			objects.ball[5].targetcoordY = objects.ball[intClosestEnemy].body:getY()
+			SetPlayerTargetToAnotherPlayer(5,intClosestEnemy, false)
 		else
 			--! do this later
-		
-		
 		end
 	end
 	
 	if strGameState == "Running" then
 		local intTarget = DetermineClosestEnemy(intBallCarrier, "")	-- find the closest player to the runner
 		if intTarget > 0 then
-			objects.ball[5].targetcoordX = objects.ball[intTarget].body:getX()
-			objects.ball[5].targetcoordY = objects.ball[intTarget].body:getY()
+			SetPlayerTargetToAnotherPlayer(5,intTarget, false)
 		else
 			--! do this later
 		
@@ -671,8 +730,7 @@ function SetRunningBackTargets()
 		-- THIS MUST GO LAST so it can override the above
 	if intBallCarrier == 5 then
 		-- RUN!!
-		objects.ball[5].targetcoordX = objects.ball[5].body:getX()
-		objects.ball[5].targetcoordY = SclFactor(0)
+		SetPlayerTargetToGoal(i)
 	end	
 
 end
@@ -697,8 +755,7 @@ function SetCentreTargets()
 	-- THIS MUST GO LAST so it can override the above
 	if intBallCarrier == 5 then
 		-- RUN!!
-		objects.ball[5].targetcoordX = objects.ball[5].body:getX()
-		objects.ball[5].targetcoordY = SclFactor(0)
+		SetPlayerTargetToGoal(i)
 	end	
 
 end
@@ -725,8 +782,7 @@ function SetTETargets()
 	
 	if intBallCarrier == 6 then
 		-- RUN!!
-		objects.ball[6].targetcoordX = objects.ball[6].body:getX()
-		objects.ball[6].targetcoordY = SclFactor(0)
+		SetPlayerTargetToGoal(i)
 	end		
 	
 end
@@ -743,11 +799,8 @@ function SetSafetyTargets()
 	end
 	
 	if strGameState == "Running" then
-		objects.ball[21].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase
-		objects.ball[21].targetcoordY = (objects.ball[intBallCarrier].body:getY())
-		
-		objects.ball[22].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase
-		objects.ball[22].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
+		SetPlayerTargetToAnotherPlayer(21,intBallCarrier, false)
+		SetPlayerTargetToAnotherPlayer(22,intBallCarrier, false)
 	end
 	
 	if strGameState == "Airborne" then	-- ball is thrown and still in the air
@@ -758,7 +811,6 @@ function SetSafetyTargets()
 		objects.ball[22].targetcoordX = football.targetx		-- need to set this on a mouse click
 		objects.ball[22].targetcoordY = football.targety
 
-
 		-- position between the ball target and the goal linear
 		objects.ball[21].targetcoordX = football.targetx		-- need to set this on a mouse click
 		objects.ball[21].targetcoordY = (football.targety - SclFactor(intTopGoalY)) / 2 + SclFactor(intTopGoalY)
@@ -767,10 +819,9 @@ function SetSafetyTargets()
 		objects.ball[22].targetcoordY = football.targety - SclFactor(intTopGoalY)
 		
 	end	
-
 end
 
-function CheckAllTargets()	
+function CheckAllTargetsOnField()	
 	-- makes sure all targets are on the field and not beyond the goal zones
 	for i = 1,intNumOfPlayers do
 		if objects.ball[i].targetcoordY < SclFactor(intTopPostY) then
@@ -780,7 +831,6 @@ function CheckAllTargets()
 			objects.ball[i].targetcoordY = SclFactor(intBottomPostY)
 		end
 	end
-	
 end
 
 function SetSnappedTargets()
@@ -869,7 +919,7 @@ function SetSnappedTargets()
 	-- #21 & #22
 	SetSafetyTargets()
 	
-	CheckAllTargets()	-- makes sure all targets are on the field and not beyond the goal zones
+	CheckAllTargetsOnField()	-- makes sure all targets are on the field and not beyond the goal zones
 end
 
 function GetDistance(x1, y1, x2, y2)
