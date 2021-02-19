@@ -1,6 +1,6 @@
 --require "sstrict.sstrict"
 
-gameversion = "v0.07"
+gameversion = "v0.08"
 
 require "dabuton" --Require the library so we can use it.
 Camera = require "hump.camera"
@@ -51,6 +51,10 @@ football.targetx = nil
 football.targety = nil
 football.carriedby = nil
 football.airborne = nil
+
+mouseclick = {}
+mouseclick.x = nil
+mouseclick.y = nil
 
 intThrowSpeed = 40
 
@@ -133,6 +137,7 @@ function CustomisePlayers()
 			objects.ball[intCounter].maxpossibleV = 14.8					-- max velocity possible for this position
 			objects.ball[intCounter].maxV = love.math.random(13.3,14.8)		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1495							-- maximum force (how much force to apply to make them move)
+			objects.ball[intCounter].throwaccuracy = love.math.random(0,10)	-- this distance ball lands from intended target
 		elseif intCounter == 2 or intCounter == 3 or intCounter == 4 then
 			objects.ball[intCounter].positionletters = "WR"
 			objects.ball[intCounter].body:setMass(love.math.random(80,100))	-- kilograms
@@ -821,6 +826,7 @@ function SetSafetyTargets()
 	-- safety are #21 and #22
 	if strGameState == "Looking" then
 		-- move in front of WR but at a distance
+		--! but what if their enemy has fallen?!
 		objects.ball[21].targetcoordX = (objects.ball[2].body:getX())		-- #2 is the left-inside WR
 		objects.ball[21].targetcoordY = (objects.ball[2].body:getY()- SclFactor(10))
 		
@@ -831,22 +837,35 @@ function SetSafetyTargets()
 	if strGameState == "Running" then
 		SetPlayerTargetToAnotherPlayer(21,intBallCarrier, 0,0)
 		SetPlayerTargetToAnotherPlayer(22,intBallCarrier, 0,0)
+		-- we don't want the safety to run forwards (down the screen) cause this makes them overshoot the runner
+		if objects.ball[21].targetcoordY > objects.ball[21].body:getY() then
+			objects.ball[21].targetcoordY = objects.ball[21].body:getY()
+		end
+		if objects.ball[22].targetcoordY > objects.ball[22].body:getY() then
+			objects.ball[22].targetcoordY = objects.ball[22].body:getY()
+		end
+		
+		
 	end
 	
 	if strGameState == "Airborne" then	-- ball is thrown and still in the air
 		-- run to where the ball will land
-		objects.ball[21].targetcoordX = football.targetx		-- need to set this on a mouse click
+		objects.ball[21].targetcoordX = football.targetx		
 		objects.ball[21].targetcoordY = football.targety					
 		
-		objects.ball[22].targetcoordX = football.targetx		-- need to set this on a mouse click
+		objects.ball[22].targetcoordX = football.targetx		
 		objects.ball[22].targetcoordY = football.targety
 
 		-- position between the ball target and the goal linear
-		objects.ball[21].targetcoordX = football.targetx		-- need to set this on a mouse click
-		objects.ball[21].targetcoordY = (football.targety - SclFactor(intTopGoalY)) / 2 + SclFactor(intTopGoalY)
+		if football.targety > SclFactor(intTopGoalY) then	-- if ball target is in goal zone then the default rush it behaviour is correct
 		
-		objects.ball[22].targetcoordX = football.targetx		-- need to set this on a mouse click
-		objects.ball[22].targetcoordY = football.targety - SclFactor(intTopGoalY)
+			--print(football.targety,intTopGoalY,SclFactor(intTopGoalY))
+			objects.ball[21].targetcoordX = football.targetx		-- need to set this on a mouse click
+			objects.ball[21].targetcoordY = (football.targety - SclFactor(intTopGoalY)) / 2 + SclFactor(intTopGoalY)
+			
+			objects.ball[22].targetcoordX = football.targetx		-- need to set this on a mouse click
+			objects.ball[22].targetcoordY = football.targety - SclFactor(intTopGoalY)
+		end
 		
 	end	
 end
@@ -983,6 +1002,11 @@ function SubtractVectors(x1,y1,x2,y2)
 	-- subtracts vector2 from vector1 i.e. v1 - v2
 	-- returns a vector (an x/y pair)
 	return (x1-x2),(y1-y2)
+end
+
+function AddVectors(x1,y1,x2,y2)
+	return (x1+x2),(y1+y2)
+
 end
 
 function dotVectors(x1,y1,x2,y2)
@@ -1447,6 +1471,10 @@ function love.mousereleased(x, y, button)
 
 	-- this overrides the screen x/y with the world x/y noting that the camera messes things up.
 	local x,y = camera:worldCoords(love.mouse.getPosition())
+	
+	-- capture the click because the ball target is different
+	mouseclick.x = x
+	mouseclick.y = y
 
 	-- a mouse click means the ball might be thrown
 	if intBallCarrier == 1 then		-- only the QB gets to throw
@@ -1463,7 +1491,16 @@ function love.mousereleased(x, y, button)
 						football.carriedby = 0
 						football.airborne = true	
 						intBallCarrier = 0
+						
+						-- determine random ball accuracy
+						-- this is a random vector and random direction
+						local intplayerinaccuracy = objects.ball[1].throwaccuracy
+						local randomXvector = love.math.random(intplayerinaccuracy * -1, intplayerinaccuracy)
+						local randomYvector = love.math.random(intplayerinaccuracy * -1, intplayerinaccuracy)
+						football.targetx = football.targetx + SclFactor(randomXvector)
+						football.targety = football.targety + SclFactor(randomYvector)
 					end
+					
 				end
 			end
 		end
@@ -1591,7 +1628,7 @@ function love.update(dt)
 				
 			end			
 		end
-		
+
 		-- ***************************************************
 		-- check for various triggers
 		
@@ -1672,14 +1709,13 @@ function love.update(dt)
 					bolCheerPlayed = true
 					--print("Touchdown!")
 					soundwin:play()
+					score.plays = score.plays + 1
 				end
 				bolEndGame = true
 				fltFinalCameraZoom = 1
 				strMessageBox = "Touchdown!!! You win!"
 			end
 		end
-		
-
 	end
 	
 	if strGameState == "Snapped" then
@@ -1708,8 +1744,6 @@ function love.update(dt)
 			end
 		end
 	end
-	
-
 end
 
 function love.draw()
@@ -1747,7 +1781,8 @@ function love.draw()
 		-- draw ball target
 		if football.airborne == true then
 			love.graphics.setColor(0, 0, 1,1) --set the drawing color
-			love.graphics.circle("line", football.targetx, football.targety, SclFactor(fltPersonWidth))	
+			-- love.graphics.circle("line", football.targetx, football.targety, SclFactor(fltPersonWidth))	
+			love.graphics.circle("line", mouseclick.x, mouseclick.y, SclFactor(fltPersonWidth))	
 		end
 
 	end
