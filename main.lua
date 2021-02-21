@@ -898,12 +898,13 @@ function SetSnappedTargets()
 	
 	-- this moves the QB towards a thrown ball or runner simply to save forming up time
 	if strGameState == "Airborne"  then
-		objects.ball[1].targetcoordX = football.targetx		-- need to set this on a mouse click
+		objects.ball[1].targetcoordX = SclFactor(fltCentreLineX)
 		objects.ball[1].targetcoordY = football.targety	
 	end
 	-- if we have a runner and it is not the QB then chase that runner
 	if strGameState == "Running" and intBallCarrier ~= 1 then
 		SetPlayerTargetToAnotherPlayer(1,intBallCarrier, 0,0)
+		objects.ball[1].targetcoordX = SclFactor(fltCentreLineX)	-- set the X to the centre line so can be ready for next snap
 	end
 	
 	-- player 2 = WR (left closest to centre)
@@ -1769,6 +1770,7 @@ function love.draw()
 		--DrawPlayersVelocity()
 	end
 
+	-- draw football
 	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 		-- draw football on ball carier
 		if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Running" then
@@ -1783,10 +1785,6 @@ function love.draw()
 			love.graphics.draw(footballimage, football.x, football.y,0,0.33,0.33,5,25)			
 		end
 			
-		-- draw QB target 
-		love.graphics.setColor(1, 0, 0,0.75) --set the drawing color
-		love.graphics.circle("line", objects.ball[1].targetcoordX, objects.ball[1].targetcoordY, objects.ball[1].shape:getRadius())		
-
 
 		-- draw ball target
 		if football.airborne == true then
@@ -1795,6 +1793,13 @@ function love.draw()
 			love.graphics.circle("line", mouseclick.x, mouseclick.y, SclFactor(fltPersonWidth))	
 		end
 
+	end
+	
+	-- draw QB target only if QB is looking or QB is running
+	if strGameState == "Looking" or (strGameState == "Running" and intBallCarrier == 1)then
+		-- draw QB target 
+		love.graphics.setColor(1, 0, 0,0.75) --set the drawing color
+		love.graphics.circle("line", objects.ball[1].targetcoordX, objects.ball[1].targetcoordY, objects.ball[1].shape:getRadius())	
 	end
 	
 	if bolEndGame then
