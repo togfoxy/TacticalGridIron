@@ -1583,6 +1583,173 @@ end
 
 function love.update(dt)
 
+	button.update()
+	
+	SetCameraView()
+	
+	SetPlayerTargets()
+	
+	ProcessKeyInput() 
+	
+	if strGameState == "Looking" and not bolKeyPressed then
+		-- do nothing
+	else
+		MoveAllPlayers()		
+	end
+
+	
+	if strGameState == "Airborne" then
+		-- Update ball position i nthe air
+		UpdateBallPosition(dt)
+	end	
+	
+	-- ***************************************************
+	-- check for various triggers
+	-- ***************************************************
+	
+	-- ball carrier is tackled	or out of bounds
+	if intBallCarrier > 0 then
+		if objects.ball[intBallCarrier].fallendown == true then
+			bolPlayOver = true
+			--print("Ball carrier is tackled.")
+			strMessageBox = "The ball carrier was tackled."
+		end	
+	end
+	
+	-- Check if runner is out of bounds
+	if intBallCarrier > 0 then	
+		if bolCarrierOutOfBounds() then
+			bolPlayOver = true
+			--print("Ball carrier is out of bounds.")
+			strMessageBox = "Ball is out of bounds."
+		end
+	end
+	
+-- state changes
+	if strGameState == "FormingUp" then
+		if bolAllPlayersFormed() then
+			--print("Ready to snap")
+			strGameState = ("Snapped")
+			intBallCarrier = 1		-- QB gets the ball
+			football.carriedby = 1
+			SetPlayersSensors(true,0)	-- make players sense collisions
+			soundgo:play()
+			strMessageBox = "Ball snapped"		
+		end	
+	end
+
+	if strGameState == "Snapped" then
+		-- snapped and looking are almost the same thing. As soon as the snap - the QB starts looking
+		strGameState = "Looking"
+		strMessageBox = "The quarterback is looking for an opening"	
+	end	
+		
+		
+	if strGameState == "Looking" then
+		-- need to see if QB has moved enough to actually be running
+		if objects.ball[1].body:getY() < SclFactor(intScrimmageY + 3) then
+			-- QB is close to scrimmage - declare him a runner
+			strGameState = "Running"
+			strMessageBox = "Player is running with the ball"		
+		end
+	end
+
+	-- Do end-of-play things
+	if bolPlayOver then
+		soundwhistle:play()
+		bolPlayOver = false
+		strGameState = "FormingUp"
+		
+
+		SetPlayersSensors(false,0)	-- turn off collisions
+		SetPlayersFallen(false)		-- everyone stands up
+		-- SetTargets				-- no need to set targets here - it will be done in the forming stage
+
+		score.downs = score.downs + 1
+		score.plays = score.plays + 1
+		
+		--adjust line of scrimmage
+		if intBallCarrier > 0 and intBallCarrier < 12 then
+			intScrimmageY = (objects.ball[intBallCarrier].body:getY() / fltScaleFactor ) 
+			
+		end
+	
+		-- check if 1st down
+		if intScrimmageY < intFirstDownMarker then
+			-- print("LoS =" .. intScrimmageY .. " FDM = " .. intFirstDownMarker)
+			score.downs = 1
+		
+			intFirstDownMarker = intScrimmageY - 10
+			if intFirstDownMarker < intTopGoalY then intFirstDownMarker = intTopGoalY end
+		end
+
+		-- update yards to go
+		score.yardstogo = round((intScrimmageY - intFirstDownMarker),0) 
+		
+		-- check for end game
+		if score.downs > 4 then
+			--print("Turnover on downs.")
+			strMessageBox = "Turnover on downs. Game over."	
+			bolEndGame = true
+			soundlost:play()
+			fltFinalCameraZoom = 1
+		end
+		
+		-- check for touchback
+		if intBallCarrier > 0 and intBallCarrier < 12 then
+			--print(objects.ball[intBallCarrier].body:getY() / fltScaleFactor ,SclFactor(intTopGoalY) )
+			if (objects.ball[intBallCarrier].body:getY() / fltScaleFactor) > (intBottomGoalY) then
+				-- touch back
+				--print("Touch back.")
+				strMessageBox = "Touch back. Game over."	
+				bolEndGame = true
+				soundlost:play()
+				fltFinalCameraZoom = 1
+			end
+		end
+	end	
+	
+	-- check for end of game things
+	if intBallCarrier > 0 and intBallCarrier < 12 then
+		if objects.ball[intBallCarrier].body:getY() < SclFactor(intTopGoalY) then
+			-- touchdown
+			if not bolCheerPlayed then
+				soundcheer:play()
+				bolCheerPlayed = true
+				--print("Touchdown!")
+				soundwin:play()
+				score.plays = score.plays + 1
+			end
+			bolEndGame = true
+			fltFinalCameraZoom = 1
+			strMessageBox = "Touchdown!!! You win!"
+		end
+	end	
+	
+	-- do update world things
+	if bolEndGame then
+		-- do nothing
+		--world:update(dt) --this puts the world into motion
+		fltFinalCameraZoom = 1
+		SetCameraView()
+		--world:update(dt) --this puts the world into motion
+	else
+		if strGameState == "FormingUp" then
+			-- update world with no collisions
+			world:update(dt) --this puts the world into motion
+					
+		elseif strGameState == "Looking" and not bolKeyPressed then
+			-- don't update world
+		else
+			-- update world and check for collisions
+			world:update(dt) --this puts the world into motion
+			world:setCallbacks(beginContact, endContact, preSolve, postSolve)		
+		end
+	end
+end
+
+function love.updatebup(dt)
+
 --print(strGameState)
 
 	button.update()	--Update all buttons
@@ -1633,6 +1800,8 @@ function love.update(dt)
 				
 			end			
 		end
+		
+		
 
 		-- ***************************************************
 		-- check for various triggers
