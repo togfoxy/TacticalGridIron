@@ -1,6 +1,6 @@
 --require "sstrict.sstrict"
 
-gameversion = "v0.08"
+gameversion = "v0.09"
 
 require "dabuton" --Require the library so we can use it.
 Camera = require "hump.camera"
@@ -315,9 +315,9 @@ function DrawStadium()
 	--DrawScores()
 	
 	-- draw instructions
-	love.graphics.setColor(1, 1, 1,1)	
+	--love.graphics.setColor(1, 1, 1,1)	
 	-- love.graphics.draw(imgInstructions, SclFactor(intRightLineX + 100),SclFactor(intTopPostY))	
-	love.graphics.draw(imgInstructions, (intRightLineX + 350),(intTopPostY + 300), _, 0.5,0.5)	
+	--love.graphics.draw(imgInstructions, (intRightLineX + 350),(intTopPostY + 300), _, 0.5,0.5)	
 end
 
 function DrawScores()
@@ -345,49 +345,98 @@ function DrawScores()
 end
 	
 function DrawAllPlayers()
+	-- do two passes - one for the fallen, then repeat for the non-fallen
 
 	for i = 1, intNumOfPlayers do
+		if objects.ball[i].fallendown then
 	
-		local objX = objects.ball[i].body:getX()
-		local objY = objects.ball[i].body:getY()
-		local objRadius = objects.ball[i].shape:getRadius()
-		if i < 12 then
-			-- set home team colours
-			love.graphics.setColor(intHomeTeamColourR/255, intHomeTeamColourG/255, intHomeTeamColourB/255) --set the drawing color
-		else
-			love.graphics.setColor(intVistingTeamColourR/255, intVistingTeamColourG/255, intVistingTeamColourB/255) --set the drawing color
-		end	
-		
-		-- after setting team colours, override the QB colour
-		if i == 1 then
-			love.graphics.setColor(intHomeQBColourR/255, intHomeQBColourG/255, intHomeQBColourB/255) -- QB colour
-		end
-		
-		
-		-- draw player
-		love.graphics.circle("fill", objX, objY, objRadius)	
-		-- draw a cute black outline
-		love.graphics.setColor(0, 0, 0,0.5) --set the drawing color
-		love.graphics.circle("line", objX, objY, objRadius)
-		
-		-- draw their number
-		-- love.graphics.setColor(0, 0, 0,1) ---set the drawing color
-		-- love.graphics.print(i,objX-7,objY-7)
-		
-		-- draw their position
-		love.graphics.setColor(0, 0, 0,1) ---set the drawing color
-		love.graphics.print(objects.ball[i].positionletters,objX-7,objY-7)
-		
-		-- draw fallen down
-		if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
-			if objects.ball[i].fallendown then
-				local markerradius = objects.ball[i].shape:getRadius()
-				markerradius = markerradius/2
-				love.graphics.setColor(1, 0, 0,1) --set the drawing color
-				love.graphics.circle("fill", objX, objY, markerradius)
+			local objX = objects.ball[i].body:getX()
+			local objY = objects.ball[i].body:getY()
+			local objRadius = objects.ball[i].shape:getRadius()
+			if i < 12 then
+				-- set home team colours
+				love.graphics.setColor(intHomeTeamColourR/255, intHomeTeamColourG/255, intHomeTeamColourB/255) --set the drawing color
+			else
+				love.graphics.setColor(intVistingTeamColourR/255, intVistingTeamColourG/255, intVistingTeamColourB/255) --set the drawing color
+			end	
+			
+			-- after setting team colours, override the QB colour
+			if i == 1 then
+				love.graphics.setColor(intHomeQBColourR/255, intHomeQBColourG/255, intHomeQBColourB/255) -- QB colour
+			end
+			
+			
+			-- draw player
+			love.graphics.circle("fill", objX, objY, objRadius)	
+			-- draw a cute black outline
+			love.graphics.setColor(0, 0, 0,0.5) --set the drawing color
+			love.graphics.circle("line", objX, objY, objRadius)
+			
+			-- draw their number
+			-- love.graphics.setColor(0, 0, 0,1) ---set the drawing color
+			-- love.graphics.print(i,objX-7,objY-7)
+			
+			-- draw their position
+			love.graphics.setColor(0, 0, 0,1) ---set the drawing color
+			love.graphics.print(objects.ball[i].positionletters,objX-7,objY-7)
+			
+			-- draw fallen down
+			if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
+				if objects.ball[i].fallendown then
+					local markerradius = objects.ball[i].shape:getRadius()
+					markerradius = markerradius/2
+					love.graphics.setColor(1, 0, 0,1) --set the drawing color
+					love.graphics.circle("fill", objX, objY, markerradius)
+				end
 			end
 		end
 	end
+	
+	-- now repeat for the non-fallen
+	for i = 1, intNumOfPlayers do
+		if not objects.ball[i].fallendown then
+	
+			local objX = objects.ball[i].body:getX()
+			local objY = objects.ball[i].body:getY()
+			local objRadius = objects.ball[i].shape:getRadius()
+			if i < 12 then
+				-- set home team colours
+				love.graphics.setColor(intHomeTeamColourR/255, intHomeTeamColourG/255, intHomeTeamColourB/255) --set the drawing color
+			else
+				love.graphics.setColor(intVistingTeamColourR/255, intVistingTeamColourG/255, intVistingTeamColourB/255) --set the drawing color
+			end	
+			
+			-- after setting team colours, override the QB colour
+			if i == 1 then
+				love.graphics.setColor(intHomeQBColourR/255, intHomeQBColourG/255, intHomeQBColourB/255) -- QB colour
+			end
+			
+			
+			-- draw player
+			love.graphics.circle("fill", objX, objY, objRadius)	
+			-- draw a cute black outline
+			love.graphics.setColor(0, 0, 0,0.5) --set the drawing color
+			love.graphics.circle("line", objX, objY, objRadius)
+			
+			-- draw their number
+			-- love.graphics.setColor(0, 0, 0,1) ---set the drawing color
+			-- love.graphics.print(i,objX-7,objY-7)
+			
+			-- draw their position
+			love.graphics.setColor(0, 0, 0,1) ---set the drawing color
+			love.graphics.print(objects.ball[i].positionletters,objX-7,objY-7)
+			
+			-- draw fallen down
+			if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
+				if objects.ball[i].fallendown then
+					local markerradius = objects.ball[i].shape:getRadius()
+					markerradius = markerradius/2
+					love.graphics.setColor(1, 0, 0,1) --set the drawing color
+					love.graphics.circle("fill", objX, objY, markerradius)
+				end
+			end
+		end
+	end	
 end
 
 function DrawPlayersVelocity()
@@ -612,26 +661,26 @@ function SetPlayerTargetToGoal(i)
 			-- iterate through all active players (not fallen) and subtract that vector from the final vector
 			-- Determine vector to each enemy
 			if not objects.ball[j].fallendown then	-- ignore players that have fallen down
-				enemyvectorX = objects.ball[j].body:getX() - objects.ball[i].body:getX()
-				enemyvectorY = objects.ball[j].body:getY() - objects.ball[i].body:getY()		-- reversed on purpose
-				
-				if j == 12 then 
-					--print("Enemy 12 X value is " .. objects.ball[j].body:getX() .. " and final vector x is " .. finalvectorX)
-					--print("Vector to enemy " .. j .. " is " .. enemyvectorX,enemyvectorY) 
-					--print("This means new final vector is now " .. finalvectorX,finalvectorY)
-										
-				end
 			
-				-- Apply weightings based on distance
-				--!
-				
-				-- Subtract those vectors from the goal vector
-				finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,enemyvectorX,enemyvectorY)
-				
-				if j == 12 then
-					--print("This means new final vector is now " .. finalvectorX,finalvectorY)
+				-- ignore if the enemy is behind the runner
+				if objects.ball[j].body:getY() < objects.ball[i].body:getY() then
+					enemyvectorX = objects.ball[j].body:getX() - objects.ball[i].body:getX()
+					enemyvectorY = objects.ball[j].body:getY() - objects.ball[i].body:getY()		
+			
+			
+					--print ("Avoiding player " .. j)
+					-- Apply weightings based on distance
+					--!
+					
+					-- Subtract those vectors from the goal vector
+					finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,enemyvectorX,enemyvectorY)
+					
+					if j == 12 then
+						--print("This means new final vector is now " .. finalvectorX,finalvectorY)
+					end
+				else
+					-- this enemy (j) is behind the runner so don't factor it into the avoidance vector
 				end
-
 			end
 		end
 		
@@ -826,12 +875,50 @@ function SetSafetyTargets()
 	-- safety are #21 and #22
 	if strGameState == "Looking" then
 		-- move in front of WR but at a distance
-		--! but what if their enemy has fallen?!
-		objects.ball[21].targetcoordX = (objects.ball[2].body:getX())		-- #2 is the left-inside WR
-		objects.ball[21].targetcoordY = (objects.ball[2].body:getY()- SclFactor(10))
+		if not objects.ball[2].fallendown then
+			-- set target to WR#2
+			objects.ball[21].targetcoordX = (objects.ball[2].body:getX())		-- #2 is the left-inside WR
+			objects.ball[21].targetcoordY = (objects.ball[2].body:getY()- SclFactor(10))
+		elseif not objects.ball[4].fallendown then
+			-- set target to WR#4
+			objects.ball[21].targetcoordX = (objects.ball[4].body:getX())		
+			objects.ball[21].targetcoordY = (objects.ball[4].body:getY()- SclFactor(10))
+		elseif not objects.ball[3].fallendown then
+			-- set target to WR#3
+			objects.ball[21].targetcoordX = (objects.ball[3].body:getX())	
+			objects.ball[21].targetcoordY = (objects.ball[3].body:getY()- SclFactor(10))
+		else
+			-- set target to closest enemy
+			local intTarget, intTargetDistance = DetermineClosestEnemy(21, "")
+			if intTarget > 0 then
+					SetPlayerTargetToAnotherPlayer(21,intTarget, 0,0)
+			else
+				--! do this later
+			end
+		end
 		
-		objects.ball[22].targetcoordX = (objects.ball[3].body:getX())		-- #3 is the left-inside WR
-		objects.ball[22].targetcoordY = (objects.ball[3].body:getY()- SclFactor(10))
+		-- repeat all the above logic for Safety #22
+		if not objects.ball[3].fallendown then
+			-- set target to WR#3
+			objects.ball[22].targetcoordX = (objects.ball[3].body:getX())		
+			objects.ball[22].targetcoordY = (objects.ball[3].body:getY()- SclFactor(10))
+		elseif not objects.ball[2].fallendown then
+			-- set target to WR#2
+			objects.ball[22].targetcoordX = (objects.ball[2].body:getX())		
+			objects.ball[22].targetcoordY = (objects.ball[2].body:getY()- SclFactor(10))
+		elseif not objects.ball[4].fallendown then
+			-- set target to WR#4
+			objects.ball[22].targetcoordX = (objects.ball[4].body:getX())		-- #3 is the left-inside WR
+			objects.ball[22].targetcoordY = (objects.ball[4].body:getY()- SclFactor(10))
+		else
+			-- set target to closest enemy
+			local intTarget, intTargetDistance = DetermineClosestEnemy(22, "")
+			if intTarget > 0 then
+					SetPlayerTargetToAnotherPlayer(22,intTarget, 0,0)
+			else
+				--! do this later
+			end
+		end		
 	end
 	
 	if strGameState == "Running" then
@@ -844,8 +931,6 @@ function SetSafetyTargets()
 		if objects.ball[22].targetcoordY > objects.ball[22].body:getY() then
 			objects.ball[22].targetcoordY = objects.ball[22].body:getY()
 		end
-		
-		
 	end
 	
 	if strGameState == "Airborne" then	-- ball is thrown and still in the air
@@ -857,16 +942,15 @@ function SetSafetyTargets()
 		objects.ball[22].targetcoordY = football.targety
 
 		-- position between the ball target and the goal linear
-		if football.targety > SclFactor(intTopGoalY) then	-- if ball target is in goal zone then the default rush it behaviour is correct
+		if football.targety > SclFactor(intTopGoalY) then	-- if ball target is in goal zone then the default rush it behaviour is correct, otherwise, do this next bit
 		
 			--print(football.targety,intTopGoalY,SclFactor(intTopGoalY))
-			objects.ball[21].targetcoordX = football.targetx		-- need to set this on a mouse click
+			objects.ball[21].targetcoordX = football.targetx		
 			objects.ball[21].targetcoordY = (football.targety - SclFactor(intTopGoalY)) / 2 + SclFactor(intTopGoalY)
 			
-			objects.ball[22].targetcoordX = football.targetx		-- need to set this on a mouse click
+			objects.ball[22].targetcoordX = football.targetx		
 			objects.ball[22].targetcoordY = football.targety - SclFactor(intTopGoalY)
 		end
-		
 	end	
 end
 
@@ -1103,11 +1187,18 @@ function MoveAllPlayers(dtime)
 				intendedyforce = 0
 			end
 			
+			-- the safeties move at half speed if the ball is airborne
+			-- this lets them move to a defensive position without overshooting the eventual runner
+			if strGameState == "Airborne" and (i == 21 or i == 22) then
+				--if i == 21 then print("ForceX was " .. intendedxforce .. " but is now " .. intendedxforce/2) end
+				intendedxforce = intendedxforce/2	-- move across the field at half speed while maintaining vertical speed
+				--intendedyforce = intendedyforce/2
+			end
+
 			-- now apply dtime to intended force and then apply a random game speed factor
 			--intendedxforce = intendedxforce * dtime * 20		-- pointless scaling up as long as maxF and maxV throttle this.
 			--intendedyforce = intendedyforce * dtime * 20
-			
-
+	
 			-- now we can apply force
 			objects.ball[i].body:applyForce(intendedxforce,intendedyforce)	
 
@@ -1160,23 +1251,23 @@ function ProcessKeyInput()
 
 	-- check game state - really only care if looking or if QB is the runner
 	if (strGameState == "Snapped" or strGameState == "Looking") or (strGameState == "Running" and intBallCarrier == 1) then	-- or strGameState == "Airborne" or strGameState == "Running" 
-		if love.keyboard.isDown("kp2") or love.keyboard.isDown('x') then
+		if love.keyboard.isDown("kp2") or love.keyboard.isDown('x') or love.keyboard.isDown('down') then
 			bolMoveDown = true
 			bolAnyKeyPressed = true
 		end
-		if love.keyboard.isDown("kp8") or love.keyboard.isDown('w')  then
+		if love.keyboard.isDown("kp8") or love.keyboard.isDown('w') or love.keyboard.isDown('up') then
 			bolMoveUp = true
 			bolAnyKeyPressed = true
 		end
-		if love.keyboard.isDown("kp4") or love.keyboard.isDown('a')  then
+		if love.keyboard.isDown("kp4") or love.keyboard.isDown('a') or love.keyboard.isDown('left') then
 			bolMoveLeft = true
 			bolAnyKeyPressed = true
 		end
-		if love.keyboard.isDown("kp6") or love.keyboard.isDown('d')  then
+		if love.keyboard.isDown("kp6") or love.keyboard.isDown('d') or love.keyboard.isDown('right') then
 			bolMoveRight = true
 			bolAnyKeyPressed = true
 		end	
-		if love.keyboard.isDown("kp5") or love.keyboard.isDown('s')  then
+		if love.keyboard.isDown("kp5") or love.keyboard.isDown('s') or love.keyboard.isDown('space') then
 			bolMoveWait = true
 			bolAnyKeyPressed = true
 		end
@@ -1282,10 +1373,7 @@ end
 
 function getAngle(currentx, currenty, targetx, targety)
 	-- receives two vectors and returns the angle (in rads??)
-
 	return math.atan2(targety - currenty, targetx - currentx)
-	
-
 end
 
 function getDistance(x1, y1, x2, y2)
@@ -1334,45 +1422,53 @@ function UpdateBallPosition(dtime)
 		football.x = football.targetx
 		football.y = football.targety
 		
-		--! will need to determine if ball is caught
-		--strGameState = ""	 --
-		football.targetx = nil
-		football.targety = nil
-		football.carriedby = 0
-		football.airborne = false	
-		intBallCarrier = 0
-		
-		-- see if anyone caught it
-		-- Determine who is closest to this position
-		local closestdistance = 1000
-		local closestplayer = 0
-		
-		for i = 1,22 do
-			-- check distance between this player and the ball
-			-- ignore anyone fallen down
-			if not objects.ball[i].fallendown then
-				mydistance = GetDistance(football.x,football.y, objects.ball[i].body:getX(),objects.ball[i].body:getY())
-				if mydistance < closestdistance then
-					-- we have a new candidate
-					closestdistance = mydistance
-					closestplayer = i
-				end
-			end
-		end
-		
-		intBallCarrier = closestplayer
-		football.carriedby = closestplayer
-		strGameState = "Running"
-		strMessageBox = objects.ball[intBallCarrier].positionletters .. " is running with the ball"			
-		
-		--! for now, we'll just give the ball to that persons
-		if closestplayer > 11 then
+		-- need to check if ball is out of bounds
+		if football.x < SclFactor(intLeftLineX) or football.x > SclFactor(intRightLineX) or football.y < SclFactor(intTopPostY) or football.y > SclFactor(intBottomPostY) then 
 			-- oops - end play
 			bolPlayOver = true
-			--print("Knocked down.")
-			strMessageBox = "Ball was knocked down. Incomplete."
+			strMessageBox = "Ball was thrown out of bounds. Incomplete."
+
 		else
-			-- someone on the offense team caught the ball so that's okay
+			--! will need to determine if ball is caught
+			--strGameState = ""	 --
+			football.targetx = nil
+			football.targety = nil
+			football.carriedby = 0
+			football.airborne = false	
+			intBallCarrier = 0
+			
+			-- see if anyone caught it
+			-- Determine who is closest to this position
+			local closestdistance = 1000
+			local closestplayer = 0
+			
+			for i = 1,22 do
+				-- check distance between this player and the ball
+				-- ignore anyone fallen down
+				if not objects.ball[i].fallendown then
+					mydistance = GetDistance(football.x,football.y, objects.ball[i].body:getX(),objects.ball[i].body:getY())
+					if mydistance < closestdistance then
+						-- we have a new candidate
+						closestdistance = mydistance
+						closestplayer = i
+					end
+				end
+			end
+			
+			intBallCarrier = closestplayer
+			football.carriedby = closestplayer
+			strGameState = "Running"
+			strMessageBox = objects.ball[intBallCarrier].positionletters .. " is running with the ball"			
+			
+			--! for now, we'll just give the ball to that person
+			if closestplayer > 11 then
+				-- oops - end play
+				bolPlayOver = true
+				--print("Knocked down.")
+				strMessageBox = "Ball was knocked down. Incomplete."
+			else
+				-- someone on the offense team caught the ball so that's okay
+			end
 		end
 	else
 		-- ball is not at the target yet
@@ -1473,12 +1569,116 @@ end
 function LoadButtons()
 	-- https://github.com/tjakka5/Dabuton
 	local flags = {
-		xPos = SclFactor(80), yPos = SclFactor(30), width = 100, height = 40, 
+		xPos = SclFactor(intRightLineX + 5), yPos = SclFactor(intBottomPostY - 10), width = 100, height = 40, 
 		color = {red = 255, green = 0, blue = 0},
 		border = {width = 2, red = 1, green = 1, blue = 1},
 		onClick = {func = ResetGame, args = {}}
 	}
 	id = button.spawn(flags)	--Spawn the button
+	
+	
+end
+
+function DrawPlayerStats(i, intPanelNum)
+	-- Draw a player panel for player #1 in panel position intPanelNum
+
+	local intPanelHeight = SclFactor(4)
+	local intPanelWidth = SclFactor(5)
+	local intPanelX = SclFactor(intRightLineX + 5)
+	local intPanelY = SclFactor((intTopPostY - (intPanelHeight / fltScaleFactor)) + (intPanelHeight / fltScaleFactor) * intPanelNum)	-- top post + panel height * panel number. The - bit is to get alignment with top post
+		
+	-- ****************************
+	-- printing order is important!
+	-- ****************************
+
+-- 1st column	
+	-- draw background
+	love.graphics.setColor(128/255, 128/255, 128/255)
+	love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)
+	
+	-- draw border
+	love.graphics.setColor(96/255, 96/255, 96/255)
+	love.graphics.rectangle("line",intPanelX,intPanelY,intPanelWidth, intPanelHeight)
+		
+	-- draw the position letters
+	love.graphics.setColor(1, 1, 1)
+	love.graphics.print (objects.ball[i].positionletters,intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))	
+
+-- 2nd column
+	-- intPanelWidth = SclFactor(10)
+	intPanelX = intPanelX + intPanelWidth
+	
+	--love.graphics.setColor(128/255, 128/255, 128/255)
+	--love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
+
+	-- draw border
+	love.graphics.setColor(96/255, 96/255, 96/255)
+	love.graphics.rectangle("line",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
+	
+	-- draw text
+	if i == 1 then	-- QB
+	
+		local intThrowAcc = objects.ball[i].throwaccuracy
+		
+		if intThrowAcc == 10 then
+			intRedValue = 255
+			intGreenValue = 0
+		end
+		if intThrowAcc == 9 then
+			intRedValue = 255
+			intGreenValue = 51
+		end		
+		if intThrowAcc == 8 then
+			intRedValue = 255
+			intGreenValue = 102
+		end		
+		if intThrowAcc == 7 then
+			intRedValue = 255
+			intGreenValue = 153
+		end		
+		if intThrowAcc == 6 then
+			intRedValue = 255
+			intGreenValue = 204
+		end		
+		if intThrowAcc == 5 then
+			intRedValue = 255
+			intGreenValue = 255
+		end		
+		if intThrowAcc == 4 then
+			intRedValue = 204
+			intGreenValue = 255
+		end		
+		if intThrowAcc == 3 then
+			intRedValue = 153
+			intGreenValue = 255
+		end			
+		if intThrowAcc == 2 then
+			intRedValue = 102
+			intGreenValue = 255
+		end			
+		if intThrowAcc == 1 then
+			intRedValue = 51
+			intGreenValue = 255
+		end			
+		if intThrowAcc == 0 then
+			intRedValue = 0
+			intGreenValue = 255
+		end			
+
+		--print(intRedValue,intGreenValue)
+		love.graphics.setColor(intRedValue/255, intGreenValue/255, 0)
+		love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)
+
+		-- this is for debugging only --!
+		love.graphics.setColor(0, 0, 0)
+		love.graphics.print (intThrowAcc, intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))
+
+
+	end
+	
+	
+	
+	
 end
 
 function love.mousereleased(x, y, button)
@@ -1566,14 +1766,11 @@ function love.load()
 	local scrnWidth,scrnHeight = love.window.getDesktopDimensions(1)
 	local applyRatio = 1080 /scrnHeight
 	
-	-- print("applyRatio = " .. applyRatio)
-	
 	fltScaleFactor = fltScaleFactor / applyRatio	-- Scale the app to fit in the window
 	
 	--set window
-	void = love.window.setMode(SclFactor(120), SclFactor(150))
+	void = love.window.setMode(SclFactor(200), SclFactor(150))
 	love.window.setTitle("Love football " .. gameversion)
-	
 	
 	LoadButtons()
 
@@ -1585,8 +1782,6 @@ function love.load()
 	camera.smoother = Camera.smooth.linear(100)
 	
 	strGameState = "FormingUp"	-- this is not necessary here but just making sure
-	
-	
 
 end
 
@@ -1603,7 +1798,7 @@ function love.update(dt)
 	if strGameState == "Looking" and not bolKeyPressed then
 		-- do nothing
 	else
-		MoveAllPlayers()		
+		MoveAllPlayers(dt)		
 	end
 
 	
@@ -1769,6 +1964,13 @@ function love.draw()
 		DrawAllPlayers()
 		--DrawPlayersVelocity()
 	end
+	
+	if strGameState == "FormingUp" or strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
+		for i = 1,11 do
+			DrawPlayerStats (i,i)
+		end
+	end	
+
 
 	-- draw football
 	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
@@ -1806,7 +2008,7 @@ function love.draw()
 		button.draw()	--Draw all buttons
 		-- draw text on buttons
 		love.graphics.setColor(0, 1, 0,1)
-		love.graphics.print ("Reset", SclFactor(85),SclFactor(32))
+		love.graphics.print ("Reset", SclFactor(intRightLineX + 7),SclFactor(intBottomPostY - 8))
 	end
 
 	camera:detach()	
