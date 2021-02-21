@@ -15,6 +15,16 @@ Installation
 4. UNBLOCK the file (button at the bottom of the properties window) and click OK
 5. Run LFB.exe
 
+Upgrade instructions
+====================
+
+1. Open the folder your LFB is installed to
+2. Delete the old LFB.exe file
+3. Download zip file from the RELEASES page of this github:
+    https://github.com/togfoxy/LoveFootball/releases
+2. Open zip file
+3. Extract the exe into the game folder (see step 1).
+
 Instructions
 ============
 
