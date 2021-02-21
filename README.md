@@ -48,6 +48,10 @@ The red circle shows where your Quarterback will run to. Use the NUMPAD or WADX 
 
 When you click the field with the mouse, a blue circle will show where you clicked. The Quarterback will instantly throw the ball.
 
+Throw the ball to your own team - but find someone that is open and can catch the ball safely.
+
+If the ball lands too close to the opposing team then the ball will be "knocked down" by that team.
+
 Keep your Quarterback away from the opposing team.
 
 When the ball is snapped, side step left or right and allow your running back (RB) room to charge forward.
