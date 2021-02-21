@@ -1017,7 +1017,7 @@ function dotVectors(x1,y1,x2,y2)
 	return (x1*x2)+(y1*y2)
 end
 
-function MoveAllPlayers()
+function MoveAllPlayers(dtime)
 
 --print("Moving players")
 
@@ -1093,6 +1093,11 @@ function MoveAllPlayers()
 				intendedxforce = 0
 				intendedyforce = 0
 			end
+			
+			-- now apply dtime to intended force and then apply a random game speed factor
+			--intendedxforce = intendedxforce * dtime * 20		-- pointless scaling up as long as maxF and maxV throttle this.
+			--intendedyforce = intendedyforce * dtime * 20
+			
 
 			-- now we can apply force
 			objects.ball[i].body:applyForce(intendedxforce,intendedyforce)	
@@ -1745,7 +1750,6 @@ function love.update(dt)
 		end
 	end
 end
-
 function love.draw()
 
 	camera:attach()	
