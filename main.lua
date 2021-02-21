@@ -895,8 +895,16 @@ end
 function SetSnappedTargets()
 	-- instantiate other game state information
 	-- player 1 = QB
-	-- objects.ball[1].targetcoordX = SclFactor(fltCentreLineX - 2)	 
-	-- objects.ball[1].targetcoordY = SclFactor(intScrimmageY + 10)
+	
+	-- this moves the QB towards a thrown ball or runner simply to save forming up time
+	if strGameState == "Airborne"  then
+		objects.ball[1].targetcoordX = football.targetx		-- need to set this on a mouse click
+		objects.ball[1].targetcoordY = football.targety	
+	end
+	-- if we have a runner and it is not the QB then chase that runner
+	if strGameState == "Running" and intBallCarrier ~= 1 then
+		SetPlayerTargetToAnotherPlayer(1,intBallCarrier, 0,0)
+	end
 	
 	-- player 2 = WR (left closest to centre)
 	-- player 3 = WR (right)
@@ -1138,7 +1146,6 @@ function ProcessKeyInput()
 
 --print("Proccessing keys")
 
-	-- make sure these are > than maxV 
 	local targetadjustmentamountX = 2	-- just one place to adjust this
 	local targetadjustmentamountY = 2	-- affects the speed of movement. I reckon dt should play a part here
 	
@@ -1150,7 +1157,8 @@ function ProcessKeyInput()
 	
 	local bolAnyKeyPressed = false
 
-	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then		
+	-- check game state - really only care if looking or if QB is the runner
+	if (strGameState == "Snapped" or strGameState == "Looking") or (strGameState == "Running" and intBallCarrier == 1) then	-- or strGameState == "Airborne" or strGameState == "Running" 
 		if love.keyboard.isDown("kp2") or love.keyboard.isDown('x') then
 			bolMoveDown = true
 			bolAnyKeyPressed = true
@@ -1738,7 +1746,7 @@ function love.update(dt)
 			-- update world with no collisions
 			world:update(dt) --this puts the world into motion
 					
-		elseif strGameState == "Looking" and not bolKeyPressed then
+		elseif (strGameState == "Looking" and not bolKeyPressed) or (strGameState == "Running" and intBallCarrier == 1 and not bolKeyPressed)  then	--! might take out "running later on"
 			-- don't update world
 		else
 			-- update world and check for collisions
@@ -1748,177 +1756,6 @@ function love.update(dt)
 	end
 end
 
-function love.updatebup(dt)
-
---print(strGameState)
-
-	button.update()	--Update all buttons
-	
-	SetCameraView()
-	
-	if strGameState == "FormingUp" then
-		-- set/re-evaluate current target/destination
-		SetPlayerTargets()
-		MoveAllPlayers()
-	
-		if bolAllPlayersFormed() then
-			--print("Ready to snap")
-			strGameState = ("Snapped")
-			intBallCarrier = 1		-- QB gets the ball
-			football.carriedby = 1
-			SetPlayersSensors(true,0)	-- make players sense collisions
-			soundgo:play()
-			strMessageBox = "Ball snapped"		
-		end
-		
-	end
-	
-	if strGameState == "Looking" then
-		-- need to see if QB has moved enough to actually be running
-		if objects.ball[1].body:getY() < SclFactor(intScrimmageY + 3) then
-			-- QB is close to scrimmage - declare him a runner
-			strGameState = "Running"
-			strMessageBox = "Player is running with the ball"		
-		end
-	end
-	
-	
-	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
-		
-		-- if intBallCarrier == 0 then intBallCarrier = 1 end	-- QB gets the ball
-		
-		SetPlayerTargets()	-- constantly adjust targets for all players
-		
-		-- This will adjust the QB target and set bolKeyPressed = true if a key was pressed
-		ProcessKeyInput() 
-		if bolKeyPressed then
-			MoveAllPlayers()
-			
-			if strGameState == "Airborne" then
-				-- Update ball position i nthe air
-				UpdateBallPosition(dt)
-				
-			end			
-		end
-		
-		
-
-		-- ***************************************************
-		-- check for various triggers
-		
-		-- ball carrier is tackled	
-		if intBallCarrier > 0 then
-			if objects.ball[intBallCarrier].fallendown == true then
-				bolPlayOver = true
-				--print("Ball carrier is tackled.")
-				strMessageBox = "The ball carrier was tackled."
-			end	
-		
-			if bolCarrierOutOfBounds() then
-				bolPlayOver = true
-				--print("Ball carrier is out of bounds.")
-				strMessageBox = "Ball is out of bounds."
-			end
-		end
-		
-		if bolPlayOver then
-			soundwhistle:play()
-			bolPlayOver = false
-			strGameState = "FormingUp"
-			
-
-			SetPlayersSensors(false,0)	-- turn off collisions
-			SetPlayersFallen(false)		-- everyone stands up
-			-- SetTargets				-- no need to set targets here - it will be done in the forming stage
-
-			score.downs = score.downs + 1
-			score.plays = score.plays + 1
-			
-			--adjust line of scrimmage
-			if intBallCarrier > 0 and intBallCarrier < 12 then
-				intScrimmageY = (objects.ball[intBallCarrier].body:getY() / fltScaleFactor ) 
-				
-			end
-		
-			-- check if 1st down
-			if intScrimmageY < intFirstDownMarker then
-				-- print("LoS =" .. intScrimmageY .. " FDM = " .. intFirstDownMarker)
-				score.downs = 1
-			
-				intFirstDownMarker = intScrimmageY - 10
-				if intFirstDownMarker < intTopGoalY then intFirstDownMarker = intTopGoalY end
-			end
-
-			-- update yards to go
-			score.yardstogo = round((intScrimmageY - intFirstDownMarker),0) 
-			
-			-- check for end game
-			if score.downs > 4 then
-				--print("Turnover on downs.")
-				strMessageBox = "Turnover on downs. Game over."	
-				bolEndGame = true
-				soundlost:play()
-				fltFinalCameraZoom = 1
-			end
-			
-			-- check for touchback
-			if intBallCarrier > 0 and intBallCarrier < 12 then
-				--print(objects.ball[intBallCarrier].body:getY() / fltScaleFactor ,SclFactor(intTopGoalY) )
-				if (objects.ball[intBallCarrier].body:getY() / fltScaleFactor) > (intBottomGoalY) then
-					-- touch back
-					--print("Touch back.")
-					strMessageBox = "Touch back. Game over."	
-					bolEndGame = true
-					soundlost:play()
-					fltFinalCameraZoom = 1
-				end
-			end
-		end
-
-		if intBallCarrier > 0 and intBallCarrier < 12 then
-			if objects.ball[intBallCarrier].body:getY() < SclFactor(intTopGoalY) then
-				-- touchdown
-				if not bolCheerPlayed then
-					soundcheer:play()
-					bolCheerPlayed = true
-					--print("Touchdown!")
-					soundwin:play()
-					score.plays = score.plays + 1
-				end
-				bolEndGame = true
-				fltFinalCameraZoom = 1
-				strMessageBox = "Touchdown!!! You win!"
-			end
-		end
-	end
-	
-	if strGameState == "Snapped" then
-		-- snapped and looking are almost the same thing. As soon as the snap - the QB starts looking
-		strGameState = "Looking"
-		strMessageBox = "The quarterback is looking for an opening"	
-	end
-
-	
-	-- update gameworld
-	if bolEndGame then
-		-- do nothing
-		--world:update(dt) --this puts the world into motion
-		fltFinalCameraZoom = 1
-		SetCameraView()
-		--world:update(dt) --this puts the world into motion
-	else
-		if strGameState == "FormingUp" then
-			world:update(dt) --this puts the world into motion
-					
-		end
-		if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
-			if bolKeyPressed then
-				world:update(dt) --this puts the world into motion
-				world:setCallbacks(beginContact, endContact, preSolve, postSolve)		
-			end
-		end
-	end
-end
 function love.draw()
 
 	camera:attach()	
