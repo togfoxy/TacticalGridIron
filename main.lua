@@ -44,6 +44,10 @@ score.yardstogo = 10
 objects = {}
 objects.ball = {}
 
+playerroutes = {}
+route = {}
+coord = {}
+
 football = {}
 football.x = nil
 football.y = nil
@@ -122,7 +126,7 @@ function InstantiatePlayers()
 		-- mode tracks if they are forming up or running or tackling or trying to catch etc
 		--objects.ball[i].mode = "forming"
 		
-		table.insert(objects, ball)
+		--table.insert(objects, ball)
 	end
 end
 
@@ -624,7 +628,7 @@ function SetPlayerTargetToAnotherPlayer(i,j, intBufferX, intBufferY)
 	-- target is now player j but this causes the player to push or slow down the carrier so need to build
 	-- in some space
 	-- check what side of the field the player is on and don't cross over or run into the carrier
-	intBufferX = math.abs(intBufferX)
+	-- intBufferX = math.abs(intBufferX)
 	if objects.ball[i].body:getX() > objects.ball[j].body:getX() then
 		objects.ball[i].targetcoordX = objects.ball[i].targetcoordX + SclFactor(intBufferX)	-- build in some buffer
 	else
@@ -696,6 +700,26 @@ function SetPlayerTargetToGoal(i)
 	end
 end
 
+function SetRouteStacks()
+
+	playerroutes = {}
+	route = {}
+	coord = {}
+	
+	coord[1] = {fltCentreLineX - 10, intScrimmageY - 19}
+	coord[2] = {fltCentreLineX - 17, intScrimmageY - 38}
+	
+	table.insert(route, coord[1])
+	table.insert(route, coord[2])
+	table.insert(playerroutes, route)	
+	
+	--print (coord[1][1] .. " " .. coord[1][2])
+	--print (route[1][1] .. " " .. route[1][2])
+	--print (route[2][1] .. " " .. route[2][2])
+	--print(playerroutes[1][2][1])	-- this is player 1, route 2, X value
+
+end
+
 function SetWRTargets()
 
 	for i = 2,4 do
@@ -721,8 +745,28 @@ function SetWRTargets()
 			if strGameState == "Looking" then
 				-- run route or if route finished then find seperation
 				-- player 2 = WR (left closest to centre)
-				objects.ball[2].targetcoordX = SclFactor(fltCentreLineX - 17)	 
-				objects.ball[2].targetcoordY = SclFactor(intScrimmageY -38)		
+				--objects.ball[2].targetcoordX = SclFactor(fltCentreLineX - 17)	 
+				--objects.ball[2].targetcoordY = SclFactor(intScrimmageY -38)
+				
+				-- move to first coord in the route stack
+				if playerroutes[1][1] == nil then	-- don't do stack stuff on an empty stack!!
+					-- stack is empty. Do nothing
+					-- the old target will remain the current target
+					print("Seems we are nil")
+				else
+					objects.ball[2].targetcoordX = SclFactor(playerroutes[1][1][1])	-- player 1, route 1, x value
+					objects.ball[2].targetcoordY = SclFactor(playerroutes[1][1][2])	-- player 1, route 1, y value
+					-- print(objects.ball[2].targetcoordX, objects.ball[2].targetcoordY)
+					
+					-- check if arrived
+					local tempdist = GetDistance(objects.ball[2].body:getX(), objects.ball[2].body:getY(), objects.ball[2].targetcoordX, objects.ball[2].targetcoordY)
+					if tempdist < 10 then	-- within ten units of target?
+						-- if route queue is NOT empty then move to next target
+						print("Length of playerroutes[1] is now " .. #playerroutes[1])
+						print("Length of playerroutes[1][1]  is now " .. #playerroutes[1][1])
+						table.remove(playerroutes[1], 1)		-- remove the first coordinate pair in playerroute 1, route 1
+					end
+				end
 
 				-- player 3 = WR (right)
 				objects.ball[3].targetcoordX = SclFactor(fltCentreLineX + 23)	 
@@ -922,8 +966,8 @@ function SetSafetyTargets()
 	end
 	
 	if strGameState == "Running" then
-		SetPlayerTargetToAnotherPlayer(21,intBallCarrier, 0,0)
-		SetPlayerTargetToAnotherPlayer(22,intBallCarrier, 0,0)
+		SetPlayerTargetToAnotherPlayer(21,intBallCarrier, -2,-2)
+		SetPlayerTargetToAnotherPlayer(22,intBallCarrier, -2,-2)
 		-- we don't want the safety to run forwards (down the screen) cause this makes them overshoot the runner
 		if objects.ball[21].targetcoordY > objects.ball[21].body:getY() then
 			objects.ball[21].targetcoordY = objects.ball[21].body:getY()
@@ -1076,6 +1120,7 @@ end
 
 function GetDistance(x1, y1, x2, y2)
 	-- this is real distance in pixels
+	-- receives two coordinate pairs (not vectors)
 	-- returns a single number
 	
 	if (x1 == nil) or (y1 == nil) or (x2 == nil) or (y2 == nil) then return 0 end
@@ -1778,6 +1823,8 @@ function love.load()
 	
 	CustomisePlayers()
 	
+	SetRouteStacks()
+	
 	camera = Camera(objects.ball[1].body:getX(), objects.ball[1].body:getY())
 	camera.smoother = Camera.smooth.linear(100)
 	
@@ -1911,6 +1958,9 @@ function love.update(dt)
 				fltFinalCameraZoom = 1
 			end
 		end
+		
+		-- reset the routes
+		SetRouteStacks()
 	end	
 	
 	-- check for end of game things
