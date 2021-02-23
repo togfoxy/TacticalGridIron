@@ -77,7 +77,7 @@ soundcheer:setVolume(0.3)		-- mp3 file is too loud. Will tweak it here.
 soundwin:setVolume(0.2)
 
 -- load images
-imgInstructions = love.graphics.newImage("instructions.png")
+--imgInstructions = love.graphics.newImage("instructions.png")
 footballimage = love.graphics.newImage("football.png")
 
 -- *******************************************************************************************************************
