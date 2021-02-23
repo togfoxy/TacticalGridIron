@@ -571,7 +571,7 @@ end
 function DetermineClosestEnemy(playernum, enemytype)
 	-- receives the player in question and the target type string (eg "WR") and finds the closest enemy player of that type
 	-- enemytype can be an empty string ("") which will search for ANY type
-	-- returns zero if none found
+	-- returns zero, 1000 if none found
 	
 	local myclosestdist = 1000
 	local myclosesttarget = 0
@@ -790,7 +790,7 @@ end
 
 function SetCornerBackTargets()
 	-- assumes game state is not 'forming'		--! I could make this
-	
+	local intTarget
 	for i = 19,20 do	-- CB's are number 19 and 20
 		if objects.ball[i].positionletters == "CB" then		-- unnecessary if statement but put here for safety
 	
@@ -799,9 +799,11 @@ function SetCornerBackTargets()
 				intWR, WRdist = DetermineClosestEnemy(i, "WR")	-- find the closest Wide Receiver to player i. Returns the index (player number)
 				intTE, TEdist = DetermineClosestEnemy(i, "TE")
 				
-				if WRdist < TEdist then
+				
+				if WRdist < TEdist and intWR > 0 then
 					intTarget = intWR
-				else
+				end
+				if TEdist <= WRdist and intTE > 0 then
 					intTarget = intTE
 				end
 				
