@@ -1,6 +1,6 @@
 --require "sstrict.sstrict"
 
-gameversion = "v0.10"
+gameversion = "v0.11"
 
 require "dabuton" --Require the library so we can use it.
 Camera = require "hump.camera"
@@ -106,6 +106,7 @@ function InstantiatePlayers()
 		objects.ball[i].fallendown = false
 		objects.ball[i].balance = 5	-- this is a percentage eg 5% chance of falling down
 		objects.ball[i].currentaction = "forming"
+		objects.ball[i].catchskill = 80						-- % chance of catching ball
 		
 	end
 end
@@ -128,6 +129,7 @@ function CustomisePlayers()
 			objects.ball[intCounter].maxpossibleV = 16.3					-- max velocity possible for this position
 			objects.ball[intCounter].maxV = love.math.random(14.8,16.3)		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1467							-- maximum force (how much force to apply to make them move)
+			
 		elseif intCounter == 5 then
 			objects.ball[intCounter].positionletters = "RB"
 			objects.ball[intCounter].body:setMass(love.math.random(86,106))	-- kilograms
@@ -1592,6 +1594,7 @@ function UpdateBallPosition(dtime)
 
 		else
 			--! will need to determine if ball is caught
+			
 			--strGameState = ""	 --
 			football.targetx = nil
 			football.targety = nil
@@ -1604,7 +1607,7 @@ function UpdateBallPosition(dtime)
 			local closestdistance = 1000
 			local closestplayer = 0
 			
-			for i = 1,22 do
+			for i = 2,22 do	-- Loop is 2,22 because the QB is not a valid receiver
 				-- check distance between this player and the ball
 				-- ignore anyone fallen down
 				if not objects.ball[i].fallendown then
@@ -1617,20 +1620,43 @@ function UpdateBallPosition(dtime)
 				end
 			end
 			
+			
+			
 			intBallCarrier = closestplayer
 			football.carriedby = closestplayer
-			strGameState = "Running"
-			strMessageBox = objects.ball[intBallCarrier].positionletters .. " is running with the ball"			
 			
+			if closestdistance > closestdistance / fltScaleFactor then
+				strMessageBox = "No receivers."
+			else
+				strMessageBox = "The ball was caught by " .. objects.ball[intBallCarrier].positionletters
+			end
+			
+		
 			--! for now, we'll just give the ball to that person
+
+			
 			if closestplayer > 11 then
 				-- oops - end play
 				bolPlayOver = true
 				--print("Knocked down.")
 				strMessageBox = "Ball was knocked down. Incomplete."
 			else
-				-- someone on the offense team caught the ball so that's okay
-			end
+				-- someone on the offense team caught the ball so that's okay. Check if they fumble it
+				--! might want to build in proximity modifiers at some point
+				
+				if love.math.random(1,100) < objects.ball[closestplayer].catchskill then
+					-- ball caught
+					strMessageBox = objects.ball[intBallCarrier].positionletters .. " is running with the ball"
+				else
+					-- ball dropped
+					bolPlayOver = true
+					strMessageBox = "Ball was fumbled and dropped. Incomplete."					
+				end
+			end	
+
+			strGameState = "Running"
+							
+			
 		end
 	else
 		-- ball is not at the target yet
