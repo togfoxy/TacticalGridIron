@@ -32,7 +32,7 @@ Wait for the players to line up on the line-of-scrimmage.
 
 When you here the Quarterback shout "GO".
 
-Use the NUMPAD keys or WADX keys or arrow keys to move the Quarterback around the field.
+Use the NUMPAD keys (+ NUM5) or WADX (+ S) keys or arrow keys (+ SPACE) to move the Quarterback around the field.
 
 Use the mouse to click anywhere on the field to throw the ball.
 
