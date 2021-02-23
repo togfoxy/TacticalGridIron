@@ -1,6 +1,6 @@
 --require "sstrict.sstrict"
 
-gameversion = "v0.09"
+gameversion = "v0.10"
 
 require "dabuton" --Require the library so we can use it.
 Camera = require "hump.camera"
@@ -107,26 +107,6 @@ function InstantiatePlayers()
 		objects.ball[i].balance = 5	-- this is a percentage eg 5% chance of falling down
 		objects.ball[i].currentaction = "forming"
 		
-		-- the physics model tracks actual velx and vely so we don't need to track that.
-		-- we do need to track the desired velx and vely
-		-- we also need to track direction of looking, remembering we can look one way and desire to travel another way - like running backwards while looking forwards.
-		--objects.ball[i].looking = 270	-- Direction of looking in degrees. 0 -> 360. NOT radians.  0 deg = right, not up.
-		--objects.ball[i].desiredvelx = 0	--
-		--objects.ball[i].desiredvely = 0
-		
-		-- customise each player/position based on i
-
-		
-		--objects.ball[i].previousdistancetotarget = 1000
-		
-		--objects.ball[i].readyfornextstage = false		-- in position and ready or has ended turn and ready.
-		
-		--objects.ball[i].velocityfactor = 1			-- a fudge to slow the player down when needed.
-		
-		-- mode tracks if they are forming up or running or tackling or trying to catch etc
-		--objects.ball[i].mode = "forming"
-		
-		--table.insert(objects, ball)
 	end
 end
 
@@ -568,9 +548,10 @@ function SetFormingUpTargets()
 	CheckAllTargetsOnField()
 end
 
-function DetermineClosestEnemy(playernum, enemytype)
+function DetermineClosestEnemy(playernum, enemytype, bolCheckOwnTeam)
 	-- receives the player in question and the target type string (eg "WR") and finds the closest enemy player of that type
 	-- enemytype can be an empty string ("") which will search for ANY type
+	-- bolCheckOwnTeam = false means scan only the enemy
 	-- returns zero, 1000 if none found
 	
 	local myclosestdist = 1000
@@ -579,15 +560,18 @@ function DetermineClosestEnemy(playernum, enemytype)
 	local currentplayerX = objects.ball[playernum].body:getX()
 	local currentplayerY = objects.ball[playernum].body:getY()
 	
-	-- set up loop to scan opposing team
-	if playernum > 11 then
-		
+	-- set up loop to scan opposing team or the whole team
+	if bolCheckOwnTeam then
 		a = 1
-		b = 11
-		--print("Hello" .. a,b)		
-	else
-		a = 12
 		b = 22
+	else
+		if playernum > 11 then
+			a = 1
+			b = 11
+		else
+			a = 12
+			b = 22
+		end
 	end
 		
 	--print(playernum,a,b)
@@ -614,11 +598,13 @@ function SetPlayerTargetToAnotherPlayer(i,j, intBufferX, intBufferY)
 	-- receives player index (the 'current' player) and set their target to player j and intercepts
 	-- buffer X and buffer Y specifies if the player is to run in front of or behind or beside etc
 	-- note the intBufferX is how much space left or right - you can't specify which side. The player will automatially NOT cross the target.
-	-- note that intBufferY **IS** +ve/-ve does matter and -ve means in front of target
+	-- note that intBufferY +ve/-ve does matter and -ve means in front of target
 	-- intbuffery will be scaled so send that in unscaled
 	-- set bufferx and buffery to 0,0 if you want a tackle
 	-- returns nothing (not a function)
 	-- the parent function needs to check if i or j have fallen down
+	
+
 	
 	objects.ball[i].targetcoordX = objects.ball[j].body:getX()
 	objects.ball[i].targetcoordY = objects.ball[j].body:getY()	
@@ -635,8 +621,8 @@ function SetPlayerTargetToAnotherPlayer(i,j, intBufferX, intBufferY)
 		objects.ball[i].targetcoordX = objects.ball[i].targetcoordX - SclFactor(intBufferX)
 	end		
 	
-	objects.ball[i].targetcoordX = objects.ball[i].targetcoordX + SclFactor(intBufferY)
-
+	objects.ball[i].targetcoordY = objects.ball[i].targetcoordY + SclFactor(intBufferY)
+	
 end
 
 function SetPlayerTargetToGoal(i)
@@ -706,8 +692,8 @@ function SetRouteStacks()
 	route = {}
 	coord = {}
 	
-	coord[1] = {fltCentreLineX - 10, intScrimmageY - 19}
-	coord[2] = {fltCentreLineX - 17, intScrimmageY - 38}
+	coord[1] = {fltCentreLineX - 10, intScrimmageY - 8}
+	coord[2] = {fltCentreLineX - 17, intScrimmageY - 20}
 	
 	table.insert(route, coord[1])
 	table.insert(route, coord[2])
@@ -734,7 +720,7 @@ function SetWRTargets()
 			
 			if strGameState == "Running" then	-- run in front of runner
 				-- target enemy closest to the runner
-				local intTarget, _ = DetermineClosestEnemy(intBallCarrier, "")	-- find the closest player to the runner
+				local intTarget, _ = DetermineClosestEnemy(intBallCarrier, "", false)	-- find the closest player to the runner
 				if intTarget > 0 then
 					SetPlayerTargetToAnotherPlayer(i,intTarget, 3,-5)
 				else
@@ -752,7 +738,7 @@ function SetWRTargets()
 				if playerroutes[1][1] == nil then	-- don't do stack stuff on an empty stack!!
 					-- stack is empty. Do nothing
 					-- the old target will remain the current target
-					print("Seems we are nil")
+					-- print("Seems we are nil")
 				else
 					objects.ball[2].targetcoordX = SclFactor(playerroutes[1][1][1])	-- player 1, route 1, x value
 					objects.ball[2].targetcoordY = SclFactor(playerroutes[1][1][2])	-- player 1, route 1, y value
@@ -762,8 +748,8 @@ function SetWRTargets()
 					local tempdist = GetDistance(objects.ball[2].body:getX(), objects.ball[2].body:getY(), objects.ball[2].targetcoordX, objects.ball[2].targetcoordY)
 					if tempdist < 10 then	-- within ten units of target?
 						-- if route queue is NOT empty then move to next target
-						print("Length of playerroutes[1] is now " .. #playerroutes[1])
-						print("Length of playerroutes[1][1]  is now " .. #playerroutes[1][1])
+						--print("Length of playerroutes[1] is now " .. #playerroutes[1])
+						--print("Length of playerroutes[1][1]  is now " .. #playerroutes[1][1])
 						table.remove(playerroutes[1], 1)		-- remove the first coordinate pair in playerroute 1, route 1
 					end
 				end
@@ -788,6 +774,90 @@ function SetWRTargets()
 
 end
 
+function SetCentreTargets()
+
+	-- Centre is #7
+	if strGameState == "Looking" then
+		-- move to LoS - 10 yards
+		objects.ball[7].targetcoordX = SclFactor(fltCentreLineX)	 
+		objects.ball[7].targetcoordY = SclFactor(intScrimmageY - 10)	
+	end
+	
+	if strGameState == "Airborne" then	-- run to predicted ball location
+		objects.ball[7].targetcoordX = football.targetx
+		objects.ball[7].targetcoordY = football.targety
+		
+	end
+	
+	if strGameState == "Running" then
+		if intBallCarrier == 7 then
+			-- player is now the runner
+			-- run!!
+			SetPlayerTargetToGoal(7)
+		else
+			-- run 10 yards in front of carrier
+			SetPlayerTargetToAnotherPlayer(7,intBallCarrier, 0, -10)
+		end
+	end
+
+end
+
+function SetOffensiveGuardTargets()
+	-- players #8,9
+
+	for i = 8,9 do
+		if strGameState == "Looking" then
+			intCentre, intDist = DetermineClosestEnemy(i,"C", true)		-- search own team for active centre player
+			if intCentre > 0 then
+				-- stay close to CENTRE to maintain a wall
+				if i == 8 then
+					SetPlayerTargetToAnotherPlayer(i,7, 4, 0)	-- Move to the left side and level to the centre (Player #7)
+				else
+					SetPlayerTargetToAnotherPlayer(i,7, 4, 0)	-- Move to the right side and level to the centre (Player #7)
+				end
+			else
+				--print("Centre down!")
+				-- no CENTRE. Need to compensate
+				
+				-- see if other guard is still active
+				if i == 8 then
+					intGrd,intDist = DetermineClosestEnemy(i, "RG", true)
+				else
+					intGrd,intDist = DetermineClosestEnemy(i, "LG", true)
+				end
+				
+				if intGrd > 0 then
+					--print("Moving to cover centre")
+					-- other guard is still active
+					-- Move over to fill the gap that Centre left
+					if i == 8 then
+						--print("Left aligning with right")
+						-- this is a +5 yards because the SetPlayer function will reverse the sign depending on side of field
+						SetPlayerTargetToAnotherPlayer(i,9, 5, 0)	-- move beside guard #9 and to the left
+					else
+						SetPlayerTargetToAnotherPlayer(i,8, 5, 0)		-- move beside guard #8 and to the right
+					end
+					
+					--print(i, objects.ball[i].targetcoordX,objects.ball[i].targetcoordY)
+				else
+					-- we're on our own - dominate the LoS!!
+					objects.ball[i].targetcoordX = SclFactor(fltCentreLineX)	 
+					objects.ball[i].targetcoordY = SclFactor(intScrimmageY - 10)
+		
+				end
+			
+			end
+		end
+		
+		--! airborne?
+		--! running?
+	
+	end
+	
+	
+
+end
+
 function SetCornerBackTargets()
 	-- assumes game state is not 'forming'		--! I could make this
 	local intTarget
@@ -795,22 +865,46 @@ function SetCornerBackTargets()
 		if objects.ball[i].positionletters == "CB" then		-- unnecessary if statement but put here for safety
 	
 			if strGameState == "Looking" then		-- QB is looking --! need to set this currentaction value on the snap event
-				--find the nearest ACTIVE WR and chase him/her
-				intWR, WRdist = DetermineClosestEnemy(i, "WR")	-- find the closest Wide Receiver to player i. Returns the index (player number)
-				intTE, TEdist = DetermineClosestEnemy(i, "TE")
+				intWR, WRdist = DetermineClosestEnemy(i, "WR", false)
+				intTE, TEdist = DetermineClosestEnemy(i, "TE", false)
 				
-				
-				if WRdist < TEdist and intWR > 0 then
-					intTarget = intWR
-				end
-				if TEdist <= WRdist and intTE > 0 then
-					intTarget = intTE
-				end
-				
-				if intTarget > 0 then
-					SetPlayerTargetToAnotherPlayer(i,intTarget, 0,0)
+				if intWR > 0 or intTE > 0 then
+					if WRdist < TEdist and intWR > 0 then
+						intTarget = intWR
+					end
+					if TEdist <= WRdist and intTE > 0 then
+						intTarget = intTE
+					end		
+
+					if intTarget > 0 then
+						SetPlayerTargetToAnotherPlayer(i,intTarget, 0,0)
+					else
+						--! do this later
+						-- this should never happen
+					end
 				else
-					--! do this later
+					-- see if there are any Safeties active
+					intSS, SSdist = DetermineClosestEnemy(i, "S", true)	-- !this searches for closest Safety which isn't strictly necessary. Any S will do.
+					intQBY = objects.ball[1].body:getY()
+					if intSS > 0 then
+						-- position CB between the safety and the QB
+						intSSY = objects.ball[intSS].body:getY()
+										
+						local intCBY = ((intQBY - intSSY) /  2) + intSSY
+						objects.ball[i].targetcoordY = intCBY		--! noting this does NOT update X and maybe it should
+					else
+						-- position CB between the goal and the QB
+						intGoalY = intTopGoalY
+						local intCBY = ((intQBY - intGoalY) /  2) + intGoalY
+					end
+					
+					if i == 19 then
+						-- set X
+					else
+						-- set Y
+					
+					end
+					
 				end
 			end
 			
@@ -828,12 +922,99 @@ function SetCornerBackTargets()
 	end
 end
 
+function SetOutsideLineBackersTargets()
+
+	for i = 17,18 do
+		if strGameState == "Looking" then
+			if i == 17 then	-- the leftmost OLB
+				intWR, WRdist = DetermineClosestEnemy(i, "WR", false)
+				if intWR > 0 then
+					SetPlayerTargetToAnotherPlayer(i,intWR, 0,0)
+				else
+					-- target anyone
+					intTarget, intTargetdist = DetermineClosestEnemy(i, "", false)
+					if intTarget > 0 then
+						-- move to 10 yards in front of that target
+						SetPlayerTargetToAnotherPlayer(i,intTarget, 0,0)
+					else
+						--! will only happen if ALL enemies is down
+					end
+				
+				end
+			else	-- right side OLB
+				if i == 18 then
+					intTE, TEdist = DetermineClosestEnemy(i, "TE", false)
+					if intTE > 0 then	-- look for a TE
+						SetPlayerTargetToAnotherPlayer(i,intTE, 0,0)
+					else
+						intWR, WRdist = DetermineClosestEnemy(i, "WR", false)
+						if intWR > 0 then
+							SetPlayerTargetToAnotherPlayer(i,intWR, 0,0)
+						else
+							-- locate any  target
+							intTarget, intTargetdist = DetermineClosestEnemy(i, "", false)
+							if intTarget > 0 then
+								-- move to 10 yards in front of that target
+								objects.ball[i].targetcoordX = objects.ball[1].body:getX()
+								objects.ball[i].targetcoordY = objects.ball[1].body:getY()	- SclFactor(10)
+							else
+								--! will only happen if ALL enemies is down
+							end
+						end					
+					end
+				else
+					--! ERROR - should never happend
+
+				end
+			end
+		end
+
+		if strGameState == "Airborne" then	-- ball is thrown and still in the air
+			-- run to where the ball will land
+			objects.ball[i].targetcoordX = football.targetx		-- need to set this on a mouse click
+			objects.ball[i].targetcoordY = football.targety					
+		end
+		
+		if strGameState == "Running" then	-- the ball carrier is running for the LoS
+			--set target to the runner
+			SetPlayerTargetToAnotherPlayer(i,intBallCarrier, 0,0)
+		end
+	end
+end
+
+function SetInsdeLineBackersTargets()
+	
+	-- ILB is #16
+	if strGameState == "Looking" then
+		intRB, intRBdist = DetermineClosestEnemy(16, "RB", false)
+		if intRB > 0 then
+			SetPlayerTargetToAnotherPlayer(16,intRB, 0, -15)	-- position in front of RB
+		else
+			SetPlayerTargetToAnotherPlayer(16,1, 0, -15)	-- position in front of QB
+		end
+	end
+	
+	if strGameState == "Airborne" then	-- ball is thrown and still in the air
+		-- run to where the ball will land
+		objects.ball[16].targetcoordX = football.targetx		-- need to set this on a mouse click
+		objects.ball[16].targetcoordY = football.targety					
+	end
+	
+	if strGameState == "Running" then	-- the ball carrier is running for the LoS
+		--set target to the runner
+		SetPlayerTargetToAnotherPlayer(16,intBallCarrier, 0,0)
+	end
+	
+
+
+end
+
 function SetRunningBackTargets()
 	-- RB is player 5
 
 	if strGameState == "Looking" then
 		-- target nearest enemy
-		local intClosestEnemy = DetermineClosestEnemy(5, "")
+		local intClosestEnemy = DetermineClosestEnemy(5, "", false)
 		if intClosestEnemy > 0 then
 			SetPlayerTargetToAnotherPlayer(5,intClosestEnemy, 0,0)
 		else
@@ -842,7 +1023,7 @@ function SetRunningBackTargets()
 	end
 	
 	if strGameState == "Running" then
-		local intTarget = DetermineClosestEnemy(intBallCarrier, "")	-- 
+		local intTarget = DetermineClosestEnemy(intBallCarrier, "", false)	-- 
 		if intTarget > 0 then
 			SetPlayerTargetToAnotherPlayer(5,intTarget, 5,-5)
 		else
@@ -860,31 +1041,6 @@ function SetRunningBackTargets()
 	if intBallCarrier == 5 then
 		-- RUN!!
 		SetPlayerTargetToGoal(5)
-	end	
-
-end
-
-function SetCentreTargets()
-	-- C is player 7
-	if strGameState == "Looking"  then
-		objects.ball[7].targetcoordX = objects.ball[7].body:getX()		-- stay in starting lane
-		objects.ball[7].targetcoordY = objects.ball[intBallCarrier].body:getY() - SclFactor(15)		
-	end
-	
-	if strGameState == "Running" then
-		objects.ball[7].targetcoordX = objects.ball[intBallCarrier].body:getX()
-		objects.ball[7].targetcoordY = objects.ball[intBallCarrier].body:getY() - SclFactor(7)	
-	end
-	
-	if strGameState == "Airborne" then	-- run to predicted ball location
-		objects.ball[7].targetcoordX = football.targetx
-		objects.ball[7].targetcoordY = football.targety
-	end	
-
-	-- THIS MUST GO LAST so it can override the above
-	if intBallCarrier == 7 then
-		-- RUN!!
-		SetPlayerTargetToGoal(7)
 	end	
 
 end
@@ -919,107 +1075,62 @@ end
 
 function SetSafetyTargets()
 	-- safety are #21 and #22
-	if strGameState == "Looking" then
-		-- move in front of WR but at a distance
-		if not objects.ball[2].fallendown then
-			-- set target to WR#2
-			objects.ball[21].targetcoordX = (objects.ball[2].body:getX())		-- #2 is the left-inside WR
-			objects.ball[21].targetcoordY = (objects.ball[2].body:getY()- SclFactor(10))
-		elseif not objects.ball[4].fallendown then
-			-- set target to WR#4
-			objects.ball[21].targetcoordX = (objects.ball[4].body:getX())		
-			objects.ball[21].targetcoordY = (objects.ball[4].body:getY()- SclFactor(10))
-		elseif not objects.ball[3].fallendown then
-			-- set target to WR#3
-			objects.ball[21].targetcoordX = (objects.ball[3].body:getX())	
-			objects.ball[21].targetcoordY = (objects.ball[3].body:getY()- SclFactor(10))
-		else
-			-- set target to closest enemy
-			local intTarget, intTargetDistance = DetermineClosestEnemy(21, "")
-			if intTarget > 0 then
-					SetPlayerTargetToAnotherPlayer(21,intTarget, 0,0)
+	for i = 21,22 do
+		if strGameState == "Looking" then
+			-- look for a WR
+			intWR, WRdist = DetermineClosestEnemy(i, "WR", false)
+			if intWR > 0 then
+				-- set target to 10 yards in front of WR
+				objects.ball[i].targetcoordX = objects.ball[intWR].body:getX()
+				objects.ball[i].targetcoordY = objects.ball[intWR].body:getY() - SclFactor(10)
 			else
-				--! do this later
+				intTE, TEdist = DetermineClosestEnemy(i, "TE", false)
+				if intTE > 0 then
+					-- set target to 10 yards in front of TE
+					objects.ball[i].targetcoordX = objects.ball[intTE].body:getX()
+					objects.ball[i].targetcoordY = objects.ball[intTE].body:getY() - SclFactor(10)	
+				else
+					-- just set target to whoever is closest
+					local intClosestEnemy = DetermineClosestEnemy(i, "", false)
+					if intTarget > 0 then
+						SetPlayerTargetToAnotherPlayer(i,intTarget, 0,0)
+					else
+						--! do this later
+					end					
+				end
 			end
 		end
 		
-		-- repeat all the above logic for Safety #22
-		if not objects.ball[3].fallendown then
-			-- set target to WR#3
-			objects.ball[22].targetcoordX = (objects.ball[3].body:getX())		
-			objects.ball[22].targetcoordY = (objects.ball[3].body:getY()- SclFactor(10))
-		elseif not objects.ball[2].fallendown then
-			-- set target to WR#2
-			objects.ball[22].targetcoordX = (objects.ball[2].body:getX())		
-			objects.ball[22].targetcoordY = (objects.ball[2].body:getY()- SclFactor(10))
-		elseif not objects.ball[4].fallendown then
-			-- set target to WR#4
-			objects.ball[22].targetcoordX = (objects.ball[4].body:getX())		-- #3 is the left-inside WR
-			objects.ball[22].targetcoordY = (objects.ball[4].body:getY()- SclFactor(10))
-		else
-			-- set target to closest enemy
-			local intTarget, intTargetDistance = DetermineClosestEnemy(22, "")
-			if intTarget > 0 then
-					SetPlayerTargetToAnotherPlayer(22,intTarget, 0,0)
-			else
-				--! do this later
-			end
-		end		
-	end
 	
-	if strGameState == "Running" then
-		SetPlayerTargetToAnotherPlayer(21,intBallCarrier, -2,-2)
-		SetPlayerTargetToAnotherPlayer(22,intBallCarrier, -2,-2)
-		-- we don't want the safety to run forwards (down the screen) cause this makes them overshoot the runner
-		if objects.ball[21].targetcoordY > objects.ball[21].body:getY() then
-			objects.ball[21].targetcoordY = objects.ball[21].body:getY()
-		end
-		if objects.ball[22].targetcoordY > objects.ball[22].body:getY() then
-			objects.ball[22].targetcoordY = objects.ball[22].body:getY()
-		end
-	end
-	
-	if strGameState == "Airborne" then	-- ball is thrown and still in the air
-		-- run to where the ball will land
-		objects.ball[21].targetcoordX = football.targetx		
-		objects.ball[21].targetcoordY = football.targety					
-		
-		objects.ball[22].targetcoordX = football.targetx		
-		objects.ball[22].targetcoordY = football.targety
-
-		-- position between the ball target and the goal linear
-		if football.targety > SclFactor(intTopGoalY) then	-- if ball target is in goal zone then the default rush it behaviour is correct, otherwise, do this next bit
-		
-			--print(football.targety,intTopGoalY,SclFactor(intTopGoalY))
-			objects.ball[21].targetcoordX = football.targetx		
-			objects.ball[21].targetcoordY = (football.targety - SclFactor(intTopGoalY)) / 2 + SclFactor(intTopGoalY)
+		if strGameState == "Airborne" then	-- ball is thrown and still in the air
+			-- run to where the ball will land
+			objects.ball[i].targetcoordX = football.targetx		
+			objects.ball[i].targetcoordY = football.targety					
 			
-			objects.ball[22].targetcoordX = football.targetx		
-			objects.ball[22].targetcoordY = football.targety - SclFactor(intTopGoalY)
-		end
-	end	
-end
+			-- position between the ball target and the goal linear
+			if football.targety > SclFactor(intTopGoalY) then	-- if ball target is in goal zone then the default rush it behaviour is correct, otherwise, do this next bit
+			
+				--print(football.targety,intTopGoalY,SclFactor(intTopGoalY))
+				objects.ball[i].targetcoordX = football.targetx		
+				objects.ball[i].targetcoordY = (football.targety - SclFactor(intTopGoalY)) / 2 + SclFactor(intTopGoalY)
+			end
+		end	
 
-function CheckAllTargetsOnField()	
-	-- makes sure all targets are on the field and not beyond the goal zones
-	for i = 1,intNumOfPlayers do
-		if objects.ball[i].targetcoordY < SclFactor(intTopPostY) then
-			objects.ball[i].targetcoordY = SclFactor(intTopPostY)
-		end
-		if objects.ball[i].targetcoordY > SclFactor(intBottomPostY) then
-			objects.ball[i].targetcoordY = SclFactor(intBottomPostY)
-		end
-		
-		-- check that targets are not outside the x values either
-		
-		if objects.ball[i].targetcoordX < SclFactor(intLeftLineX) then
-			objects.ball[i].targetcoordX = SclFactor(intLeftLineX + 2)
-		end
-		if objects.ball[i].targetcoordX > SclFactor(intRightLineX) then
-			objects.ball[i].targetcoordX = SclFactor(intRightLineX - 2)
-		end		
+		if strGameState == "Running" then
+			SetPlayerTargetToAnotherPlayer(i,intBallCarrier, -2,-2)
 
+			-- we don't want the safety to run forwards (down the screen) cause this makes them overshoot the runner
+			if objects.ball[i].targetcoordY > objects.ball[i].body:getY() then
+				objects.ball[i].targetcoordY = objects.ball[i].body:getY()
+			end
+		end			
+		
 	end
+
+	
+
+	
+
 end
 
 function SetSnappedTargets()
@@ -1052,13 +1163,9 @@ function SetSnappedTargets()
 	SetCentreTargets()
 	
 	-- player 8 = left guard offense
-	objects.ball[8].targetcoordX = SclFactor(fltCentreLineX - 4)	 
-	objects.ball[8].targetcoordY = SclFactor(intScrimmageY -15)		
-	
 	-- player 9 = right guard offense
-	objects.ball[9].targetcoordX = SclFactor(fltCentreLineX + 4)	 
-	objects.ball[9].targetcoordY = SclFactor(intScrimmageY -15)			
-
+	SetOffensiveGuardTargets()
+	
 	-- player 10 = left tackle 
 	objects.ball[10].targetcoordX = SclFactor(fltCentreLineX - 8)	 
 	objects.ball[10].targetcoordY = SclFactor(intScrimmageY -15)			
@@ -1086,29 +1193,15 @@ function SetSnappedTargets()
 		objects.ball[15].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase qb	 
 		objects.ball[15].targetcoordY = (objects.ball[intBallCarrier].body:getY())		
 
-		-- ILB
-		if not objects.ball[5].fallendown then	-- if RB has not fallen then target the RB
-			objects.ball[16].targetcoordX = (objects.ball[5].body:getX())	-- chases running back
-			objects.ball[16].targetcoordY = (objects.ball[5].body:getY())	
-		else
-			objects.ball[12].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- chase QB	 
-			objects.ball[12].targetcoordY = (objects.ball[intBallCarrier].body:getY())	
-		end
-			
-		-- Left outside LB
-		objects.ball[17].targetcoordX = (objects.ball[intBallCarrier].body:getX())	-- line up with the QB
-		if (objects.ball[1].body:getY() - objects.ball[17].body:getY()) then	-- check distance to QB
-			objects.ball[17].targetcoordY = SclFactor(intScrimmageY - 10)
-		else
-			objects.ball[17].targetcoordY = (objects.ball[intBallCarrier].body:getY())	-- close in on QB if opportunity presents
-		end
 
-		-- player 18 = Right Outside LB
-		objects.ball[18].targetcoordX = (objects.ball[5].body:getX())	-- line up with the RB	 
-		objects.ball[18].targetcoordY = SclFactor(intScrimmageY - 10)				
-			
-	
 	end
+	
+	-- player 16 = inside linebacker
+	SetInsdeLineBackersTargets()
+	
+	 -- player 17 = Left outside LB
+	 -- player 18 = Right Outside LB
+	SetOutsideLineBackersTargets()
 	
 	-- player 19 = Left CB
 	-- player 20 = Right CB
@@ -1118,6 +1211,28 @@ function SetSnappedTargets()
 	SetSafetyTargets()
 	
 	CheckAllTargetsOnField()	-- makes sure all targets are on the field and not beyond the goal zones
+end
+
+function CheckAllTargetsOnField()	
+	-- makes sure all targets are on the field and not beyond the goal zones
+	for i = 1,intNumOfPlayers do
+		if objects.ball[i].targetcoordY < SclFactor(intTopPostY) then
+			objects.ball[i].targetcoordY = SclFactor(intTopPostY)
+		end
+		if objects.ball[i].targetcoordY > SclFactor(intBottomPostY) then
+			objects.ball[i].targetcoordY = SclFactor(intBottomPostY)
+		end
+		
+		-- check that targets are not outside the x values either
+		
+		if objects.ball[i].targetcoordX < SclFactor(intLeftLineX) then
+			objects.ball[i].targetcoordX = SclFactor(intLeftLineX + 2)
+		end
+		if objects.ball[i].targetcoordX > SclFactor(intRightLineX) then
+			objects.ball[i].targetcoordX = SclFactor(intRightLineX - 2)
+		end		
+
+	end
 end
 
 function GetDistance(x1, y1, x2, y2)
@@ -1555,6 +1670,7 @@ function ResetGame()
 		bolEndGame = false
 		soundwin:stop()
 		soundlost:stop()
+		SetRouteStacks()
 
 	end
 end
@@ -1793,7 +1909,7 @@ function beginContact(a, b, coll)
 				end
 				
 				-- check if player B falls down
-				local chanceoffalling = objects.ball[aindex].balance
+				local chanceoffalling = objects.ball[bindex].balance
 				if intBallCarrier == bindex then chanceoffalling = 85 end -- huge penalty if you hold the ball
 				if love.math.random(1,100) < chanceoffalling then
 					-- oops - fell down!
