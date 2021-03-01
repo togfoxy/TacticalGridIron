@@ -106,7 +106,7 @@ function InstantiatePlayers()
 		objects.ball[i].fallendown = false
 		objects.ball[i].balance = 5	-- this is a percentage eg 5% chance of falling down
 		objects.ball[i].currentaction = "forming"
-		objects.ball[i].catchskill = 80						-- % chance of catching ball
+		objects.ball[i].catchskill = love.math.random(70,80)				-- % chance of catching ball
 		
 	end
 end
@@ -129,6 +129,8 @@ function CustomisePlayers()
 			objects.ball[intCounter].maxpossibleV = 16.3					-- max velocity possible for this position
 			objects.ball[intCounter].maxV = love.math.random(14.8,16.3)		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1467							-- maximum force (how much force to apply to make them move)
+			objects.ball[intCounter].catchskill = love.math.random(80,90)			-- % chance of catching ball
+			-- if catchskill is changed here then need to update coloured boxes
 			
 		elseif intCounter == 5 then
 			objects.ball[intCounter].positionletters = "RB"
@@ -596,6 +598,55 @@ function DetermineClosestEnemy(playernum, enemytype, bolCheckOwnTeam)
 	return myclosesttarget, myclosestdist
 end
 
+function Determine2ndClosestEnemy(playernum, enemytype, bolCheckOwnTeam)
+	-- receives the player in question and the target type string (eg "WR") and finds the closest enemy player of that type
+	-- enemytype can be an empty string ("") which will search for ANY type
+	-- bolCheckOwnTeam = false means scan only the enemy
+	-- returns zero, 1000 if none found
+	
+	local myclosestdist = 1000
+	local myclosesttarget = 0
+	
+	local currentplayerX = objects.ball[playernum].body:getX()
+	local currentplayerY = objects.ball[playernum].body:getY()
+	
+	-- get the closest player and ignore that during the next scan
+	p1,_ = DetermineClosestEnemy(playernum, enemytype, bolCheckOwnTeam)
+	
+	-- set up loop to scan opposing team or the whole team
+	if bolCheckOwnTeam then
+		a = 1
+		b = 22
+	else
+		if playernum > 11 then
+			a = 1
+			b = 11
+		else
+			a = 12
+			b = 22
+		end
+	end
+		
+	--print(playernum,a,b)
+	for i = a,b do
+		if not objects.ball[i].fallendown then
+			if objects.ball[i].positionletters == enemytype or enemytype == "" then
+				-- determine distance
+				local thisdistance = GetDistance(currentplayerX, currentplayerY, objects.ball[i].body:getX(), objects.ball[i].body:getY())
+				
+				if thisdistance < myclosestdist and i ~= p1 then	-- need to ignore p1, which we already know is the closest player
+					-- found a closer target. Make that one the focuse
+					myclosesttarget = i
+					myclosestdist = thisdistance
+					--print("Just set closest target for player " .. playernum .. " to " .. i)
+				end
+			end
+		end
+	end		-- for loop
+	
+	return myclosesttarget, myclosestdist
+end
+
 function SetPlayerTargetToAnotherPlayer(i,j, intBufferX, intBufferY)
 	-- receives player index (the 'current' player) and set their target to player j and intercepts
 	-- buffer X and buffer Y specifies if the player is to run in front of or behind or beside etc
@@ -689,23 +740,45 @@ function SetPlayerTargetToGoal(i)
 end
 
 function SetRouteStacks()
-
-	playerroutes = {}
-	route = {}
+	-- for each player, set a pair of coords and then add that coords to that players stack
+	-- insert them in order of execution so that the last coord is inserted last
+	-- later on, will read from the front in sequence
+	
+	-- the pairs are field coordinates - not screen coordinates. Don't scale them up
+	
 	coord = {}
+	playerroutes = {{},{},{},{},{},{},{},{}}		-- need one for each player. Only three WR atm but what the heck.
 	
-	coord[1] = {fltCentreLineX - 10, intScrimmageY - 8}
-	coord[2] = {fltCentreLineX - 17, intScrimmageY - 20}
+	-- player 2 = WR left inside
+	coord[1] = {fltCentreLineX - 10,intScrimmageY - 8}
+	coord[2] = {fltCentreLineX - 17,intScrimmageY - 20}
 	
-	table.insert(route, coord[1])
-	table.insert(route, coord[2])
-	table.insert(playerroutes, route)	
+	--playerroutes[2] = {coord[1],coord[2],coord[3]}
+	table.insert(playerroutes[2],coord[1])
+	table.insert(playerroutes[2],coord[2])
+	--table.insert(playerroutes[2],coord[3])
 	
-	--print (coord[1][1] .. " " .. coord[1][2])
-	--print (route[1][1] .. " " .. route[1][2])
-	--print (route[2][1] .. " " .. route[2][2])
-	--print(playerroutes[1][2][1])	-- this is player 1, route 2, X value
+	-- player 3 = WR (right)
+	coord[1] = {fltCentreLineX + 23,intScrimmageY -20}
+	coord[2] = nil
+	
+	table.insert(playerroutes[3],coord[1])
+	--table.insert(playerroutes[3],coord[2])
 
+	-- player 4 = WR (left on outside)
+	coord[1] = {fltCentreLineX - 22,intScrimmageY - 15}
+	coord[2] = nil
+	
+	table.insert(playerroutes[4],coord[1])
+	--table.insert(playerroutes[3],coord[2])	
+	
+
+	
+	--print (playerroutes[2][1][1])	-- player 2 \ coordinate pair 1 \ X value
+	--print (playerroutes[2][1][2]) -- player 2 \ coordinate pair 1 \ Y value
+	--print()
+	--print (playerroutes[2][2][1]) -- player 2 \ coordinate pair 2 \ X value
+	--print (playerroutes[2][2][2]) -- player 2 \ coordinate pair 2 \ Y value
 end
 
 function SetWRTargets()
@@ -731,39 +804,94 @@ function SetWRTargets()
 			end
 			
 			if strGameState == "Looking" then
-				-- run route or if route finished then find seperation
-				-- player 2 = WR (left closest to centre)
-				--objects.ball[2].targetcoordX = SclFactor(fltCentreLineX - 17)	 
-				--objects.ball[2].targetcoordY = SclFactor(intScrimmageY -38)
-				
-				-- move to first coord in the route stack
-				if playerroutes[1][1] == nil then	-- don't do stack stuff on an empty stack!!
-					-- stack is empty. Do nothing
-					-- the old target will remain the current target
-					-- print("Seems we are nil")
-				else
-					objects.ball[2].targetcoordX = SclFactor(playerroutes[1][1][1])	-- player 1, route 1, x value
-					objects.ball[2].targetcoordY = SclFactor(playerroutes[1][1][2])	-- player 1, route 1, y value
-					-- print(objects.ball[2].targetcoordX, objects.ball[2].targetcoordY)
-					
-					-- check if arrived
-					local tempdist = GetDistance(objects.ball[2].body:getX(), objects.ball[2].body:getY(), objects.ball[2].targetcoordX, objects.ball[2].targetcoordY)
-					if tempdist < 10 then	-- within ten units of target?
-						-- if route queue is NOT empty then move to next target
-						--print("Length of playerroutes[1] is now " .. #playerroutes[1])
-						--print("Length of playerroutes[1][1]  is now " .. #playerroutes[1][1])
-						table.remove(playerroutes[1], 1)		-- remove the first coordinate pair in playerroute 1, route 1
+				-- run route and then look for seperation at end of route
+				for i = 2,4 do
+					if playerroutes[i][1] == nil then
+						-- route finished. Old target remains in memory
+						--! find some seperation
+						
+						-- Determine the two closest players, including own team
+						closePlayer1, closeDistance1 =  DetermineClosestEnemy(i, "", True)
+						closePlayer2, closeDistance2 =  Determine2ndClosestEnemy(i, "", True)
+						
+						-- find a vector for those three points
+						--! This will fail if too many players fall over
+						x1 = objects.ball[closePlayer1].body:getX()
+						y1 = objects.ball[closePlayer1].body:getY()
+						x2 = objects.ball[closePlayer2].body:getX()
+						y2 = objects.ball[closePlayer2].body:getY()						
+						--print ("For player " .. i .. ", the closest players are " .. closePlayer1 .. " and " .. closePlayer2)
+						
+						-- also determine the closest sideline
+						-- x3 = either left side or right side
+						-- y3 = the y of the player
+						if objects.ball[i].body:getX() < SclFactor(fltCentreLineX) then
+							x3 = intLeftLineX
+							closeDistance3 = objects.ball[i].body:getX()
+						else
+							x3 = intRightLineX
+							closeDistance3 = SclFactor(intRightLineX) - objects.ball[i].body:getX()
+						end
+						y3 = objects.ball[i].body:getY()
+						
+						Scale1 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x1, y1)	
+						-- we have closeDistance1 above. Would be more efficient to use that --!
+						
+						Scale2 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x2, y2)
+						Scale3 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x3, y3)
+						
+						-- Normalise the scales
+						TotalScale = Scale1 + Scale2 + Scale3
+						Scale1 = Scale1/TotalScale
+						Scale2 = Scale2/TotalScale
+						Scale3 = Scale3/TotalScale
+						
+						if i == 2 then
+						print("For player " .. i .. " the closest player is " .. closePlayer1 .. " and scale % = " .. Scale1)
+						print("For player " .. i .. " the 2nd closest player is " .. closePlayer2 .. " and scale % = " .. Scale2)
+						print("For player " .. i .. " the closest player is " .. closePlayer1 .. " and scale % = " .. Scale3)
+						print("===")
+						end
+						
+						-- apply avoidance vector for closest player
+						-- scale the vector before applying it
+						X1scaled,Y1scaled = ScaleVector(x1,y1,Scale1)
+						
+						-- apply this avoidance vector to the current target
+						finalvectorX,finalvectorY = SubtractVectors(objects.ball[i].targetcoordX,objects.ball[i].targetcoordY,X1scaled,Y1scaled)
+						
+						-- apply avoidance vector for 2nd closest player
+						-- scale the vector before applying it
+						X2scaled,Y2scaled = ScaleVector(x2,y2,Scale2)
+						
+						-- apply this avoidance vector to the current target
+						finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X2scaled,Y2scaled)
+											
+						-- apply avoidance vector for closest sideline
+						-- scale the vector before applying it
+						X3scaled,Y3scaled = ScaleVector(x3,y3,Scale3)
+						
+						-- apply this avoidance vector to the current target
+						finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X3scaled,Y3scaled)
+						
+						-- set target to that vector
+						objects.ball[i].targetcoordX = objects.ball[i].body:getX() + finalvectorX
+						objects.ball[i].targetcoordY = objects.ball[i].body:getY() + finalvectorY
+						
+					else
+						-- route 1 is the first route, or current route
+						objects.ball[i].targetcoordX = SclFactor(playerroutes[i][1][1])	-- player i, route 1, x value
+						objects.ball[i].targetcoordY = SclFactor(playerroutes[i][1][2])	-- player i, route 1, y value						
+
+						-- check if arrived						
+						local tempdist = GetDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), objects.ball[i].targetcoordX, objects.ball[i].targetcoordY)
+						
+						if tempdist < 7 then	-- within 7 units of target
+							-- move to next target
+							table.remove(playerroutes[i], 1)	-- remove the first coordinate pair in playerroute making all pairs shuffle up
+						end
 					end
 				end
-
-				-- player 3 = WR (right)
-				objects.ball[3].targetcoordX = SclFactor(fltCentreLineX + 23)	 
-				objects.ball[3].targetcoordY = SclFactor(intScrimmageY -20)	
-				--print("Player 3 coords is " .. objects.ball[3].body:getX() .. "," .. objects.ball[20].body:getY() )
-				
-				-- player 4 = WR (left on outside)
-				objects.ball[4].targetcoordX = SclFactor(fltCentreLineX - 22)	 
-				objects.ball[4].targetcoordY = SclFactor(intScrimmageY - 15)				
 			end
 			
 			-- THIS MUST GO LAST so it can override the above
@@ -771,7 +899,6 @@ function SetWRTargets()
 				-- RUN!!
 				SetPlayerTargetToGoal(i)
 			end			
-
 	end
 
 end
@@ -1528,6 +1655,10 @@ function round(num, idp)
 	return tonumber(string.format("%." .. (idp or 0) .. "f", num))
 end	
 
+
+function GetInverseSqrtDistance(x1, y1, x2, y2)
+	return 1/math.sqrt(((x2-x1)^2)+((y2-y1)^2))
+end
 function SetPlayersFallen(bolNewSetting)
 
 	for i = 1,intNumOfPlayers do
@@ -1542,6 +1673,7 @@ end
 
 function getDistance(x1, y1, x2, y2)
 	-- this is real distance in pixels
+	-- coorindate. Not vectors
     local horizontal_distance = x1 - x2
     local vertical_distance = y1 - y2
     --Both of these work
@@ -1554,7 +1686,7 @@ function getDistance(x1, y1, x2, y2)
 end
 
 function ScaleVector(x,y,fctor)
-	-- Recieve a vector (0,0, -> x,y) and scale/multiply it by factor
+	-- Receive a vector (0,0, -> x,y) and scale/multiply it by factor
 	-- returns a new vector (assuming origin)
 	return x * fctor, y * fctor
 end
@@ -1701,6 +1833,49 @@ function ResetGame()
 	end
 end
 
+function DrawRoutes()
+	-- for each WR, draw the route they will run
+	
+local previousX2
+local previousY2
+			
+	for i = 2,4 do	-- for each WR
+		for j = 1,9 do	-- for each coordinate in route (9 is an arbitrarily high number)
+			-- draw a line
+			
+			if playerroutes[i][j] == nil then break end	-- run out of pairs. This loop is done.
+			
+			
+			-- determining the end of the line is easier
+			X2 = playerroutes[i][j][1]	-- player i \ route j \ X coordinate
+			Y2 = playerroutes[i][j][2]
+			
+			-- now determine the start of this line
+			if j == 1 then
+				-- starting point is player's position
+				
+				X1 = objects.ball[i].body:getX() / fltScaleFactor -- need to return this to field coords
+				Y1 = objects.ball[i].body:getY() / fltScaleFactor
+			else
+				-- starting point is the end of the previous line
+				
+				X1 = previousX2
+				Y1 = previousY2
+	
+			end
+			
+			--print(X1 .. " " .. Y1 .. " " .. x2 .. " " .. y2 )
+		
+			-- now draw the line
+			love.graphics.setColor(1, 1, 1,1) --set the drawing color
+			love.graphics.line(SclFactor(X1),SclFactor(Y1),SclFactor(X2),SclFactor(Y2))
+			
+			previousX2 = X2
+			previousY2 = Y2
+		end
+	end
+end
+
 function AdjustCameraZoom(cam)
 	-- Receives a hump.Camera object, checks what the intended zoom is, what the real zoom is and then apply a new zoom with smoothing.
 	
@@ -1807,65 +1982,34 @@ function DrawPlayerStats(i, intPanelNum)
 	-- draw text
 	if i == 1 then	-- QB
 	
-		local intThrowAcc = objects.ball[i].throwaccuracy
-		
-		if intThrowAcc == 10 then
-			intRedValue = 255
-			intGreenValue = 0
-		end
-		if intThrowAcc == 9 then
-			intRedValue = 255
-			intGreenValue = 51
-		end		
-		if intThrowAcc == 8 then
-			intRedValue = 255
-			intGreenValue = 102
-		end		
-		if intThrowAcc == 7 then
-			intRedValue = 255
-			intGreenValue = 153
-		end		
-		if intThrowAcc == 6 then
-			intRedValue = 255
-			intGreenValue = 204
-		end		
-		if intThrowAcc == 5 then
-			intRedValue = 255
-			intGreenValue = 255
-		end		
-		if intThrowAcc == 4 then
-			intRedValue = 204
-			intGreenValue = 255
-		end		
-		if intThrowAcc == 3 then
-			intRedValue = 153
-			intGreenValue = 255
-		end			
-		if intThrowAcc == 2 then
-			intRedValue = 102
-			intGreenValue = 255
-		end			
-		if intThrowAcc == 1 then
-			intRedValue = 51
-			intGreenValue = 255
-		end			
-		if intThrowAcc == 0 then
-			intRedValue = 0
-			intGreenValue = 255
-		end			
+		-- this works on 0 -> 10 with 0 being best
+		local myValue = objects.ball[i].throwaccuracy
+		intRedValue = myValue * 51
+		if intRedValue > 255 then intRedValue = 255 end
+		intGreenValue = (10 - myValue) * 51
 
 		--print(intRedValue,intGreenValue)
 		love.graphics.setColor(intRedValue/255, intGreenValue/255, 0)
 		love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)
 
-		-- this is for debugging only --!
 		love.graphics.setColor(0, 0, 0)
-		love.graphics.print (intThrowAcc, intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))
-
-
+		love.graphics.print ("THR", intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))
 	end
+	if i == 2 or i == 3 or i== 4 then	-- WR
+		local myValue = objects.ball[i].catchskill
+		myValue = myValue - 80
 	
+		intGreenValue = myValue * 51
+		intRedValue = (10 - myValue) * 51
+		
+		love.graphics.setColor(intRedValue/255, intGreenValue/255, 0)
+		love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
+		
+		love.graphics.setColor(0, 0, 0)
+		love.graphics.print ("CTH", intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))
 	
+	end
+
 	
 	
 end
@@ -1887,7 +2031,7 @@ function love.mousereleased(x, y, button)
 				if x > SclFactor(intLeftLineX) and x < SclFactor(intRightLineX) then
 					if y > SclFactor(intTopPostY) and y < SclFactor(intBottomPostY) then
 						strGameState = "Airborne"
-						football.x = objects.ball[intBallCarrier].body:getX()
+						football.x = objects.ball[1].body:getX()
 						football.y = objects.ball[intBallCarrier].body:getY()				
 						football.targetx = x
 						football.targety = y
@@ -1897,11 +2041,25 @@ function love.mousereleased(x, y, button)
 						
 						-- determine random ball accuracy
 						-- this is a random vector and random direction
-						local intplayerinaccuracy = objects.ball[1].throwaccuracy
+						local intplayerinaccuracy = objects.ball[1].throwaccuracy 
+						
+						-- add some inaccuracy based on distance between thrower and intended click
+						-- if throw > 15 then add some randomness	-- 15 is arbitrary value
+						local mydistance = getDistance(objects.ball[1].body:getX(), objects.ball[1].body:getY(), x, y)
+						if mydistance > 15 then
+							-- take the distance over 15 yards, divide by 10, then add that to inaccuracy
+							myinacc = round((love.math.random(0, (mydistance - 15) / 10)),0)
+							
+							intplayerinaccuracy = intplayerinaccuracy + myinacc
+							--print ("Inacc is now " .. myinacc)
+						end
+						
+						
 						local randomXvector = love.math.random(intplayerinaccuracy * -1, intplayerinaccuracy)
 						local randomYvector = love.math.random(intplayerinaccuracy * -1, intplayerinaccuracy)
 						football.targetx = football.targetx + SclFactor(randomXvector)
 						football.targety = football.targety + SclFactor(randomYvector)
+						
 					end
 					
 				end
@@ -2196,6 +2354,10 @@ function love.draw()
 		-- draw QB target 
 		love.graphics.setColor(1, 0, 0,0.75) --set the drawing color
 		love.graphics.circle("line", objects.ball[1].targetcoordX, objects.ball[1].targetcoordY, objects.ball[1].shape:getRadius())	
+	end
+	
+	if strGameState == "FormingUp" then
+		DrawRoutes()
 	end
 	
 	if bolEndGame then
