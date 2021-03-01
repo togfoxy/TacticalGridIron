@@ -44,7 +44,7 @@ You can only control the Quarterback. The rest of the players are bots.
 Tips
 ====
 
-The red circle shows where your Quarterback will run to. Use the NUMPAD or WADX keys to move to a new location.
+The red circle shows where your Quarterback will run to. Use the NUMPAD or WADX keys or arrow keys to move to a new location.
 
 When you click the field with the mouse, a blue circle will show where you clicked. The Quarterback will instantly throw the ball.
 
