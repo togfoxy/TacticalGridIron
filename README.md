@@ -52,6 +52,12 @@ Throw the ball to your own team - but find someone that is open and can catch th
 
 If the ball lands too close to the opposing team then the ball will be "knocked down" by that team.
 
+Quarterbacks have throwing accuracy. Factor this into your ball placement.
+
+Throw distance affects accuracy. Short throws will be more accurate than long bombs.
+
+Some players are good at catching and others are not.
+
 Keep your Quarterback away from the opposing team.
 
 When the ball is snapped, side step left or right and allow your running back (RB) room to charge forward.
