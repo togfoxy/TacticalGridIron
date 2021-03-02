@@ -77,8 +77,19 @@ soundcheer:setVolume(0.3)		-- mp3 file is too loud. Will tweak it here.
 soundwin:setVolume(0.2)
 
 -- load images
---imgInstructions = love.graphics.newImage("instructions.png")
+imgPlayerImages = {}
+imgmudimage = {}
+mudpair = {0,0}
+mudimages = {}
+
 footballimage = love.graphics.newImage("football.png")
+imgmudimage[1] = love.graphics.newImage("mudv1.png")
+
+imgPlayerImages[1] = love.graphics.newImage("blueplayer1.png")
+
+
+
+
 
 -- *******************************************************************************************************************
 
@@ -282,6 +293,12 @@ function DrawStadium()
 	--love.graphics.setColor(intRed/255, intGreen/255, intBlue/255,0.7)
 	--love.graphics.line(SclFactor(41.5),SclFactor(15),SclFactor(41.5), SclFactor(135))
 	
+	-- draw mud
+	love.graphics.setColor(1, 1, 1,0.3)
+	for i = 1, #mudimages do
+		love.graphics.draw(imgmudimage[1],mudimages[i][1],mudimages[i][2],0, 0.25,0.25, 20,20)
+	end
+	
 	--draw scrimmage
 	local intRed = 93
 	local intGreen = 138
@@ -425,6 +442,9 @@ function DrawAllPlayers()
 			end
 		end
 	end	
+	
+	--love.graphics.setColor(1, 1, 1,1) --set the drawing color
+	--love.graphics.draw(imgPlayerImages[1], objects.ball[1].body:getX(), objects.ball[1].body:getY(),4.7,0.5,0.5,10,10) -- radians, x scale, y scale, offset, offset	
 end
 
 function DrawPlayersVelocity()
@@ -808,76 +828,92 @@ function SetWRTargets()
 				for i = 2,4 do
 					if playerroutes[i][1] == nil then
 						-- route finished. Old target remains in memory
-						--! find some seperation
-						
-						-- Determine the two closest players, including own team
-						closePlayer1, closeDistance1 =  DetermineClosestEnemy(i, "", True)
-						closePlayer2, closeDistance2 =  Determine2ndClosestEnemy(i, "", True)
-						
-						-- find a vector for those three points
-						--! This will fail if too many players fall over
-						x1 = objects.ball[closePlayer1].body:getX()
-						y1 = objects.ball[closePlayer1].body:getY()
-						x2 = objects.ball[closePlayer2].body:getX()
-						y2 = objects.ball[closePlayer2].body:getY()						
-						--print ("For player " .. i .. ", the closest players are " .. closePlayer1 .. " and " .. closePlayer2)
-						
-						-- also determine the closest sideline
-						-- x3 = either left side or right side
-						-- y3 = the y of the player
-						if objects.ball[i].body:getX() < SclFactor(fltCentreLineX) then
-							x3 = intLeftLineX
-							closeDistance3 = objects.ball[i].body:getX()
+						--  find some seperation
+
+						if objects.ball[i].body:getY() < SclFactor(intScrimmageY - 25) then
+							-- move down the field to somewhere more reasonable
+							objects.ball[i].targetcoordX = SclFactor(fltCentreLineX)
+							objects.ball[i].targetcoordY = SclFactor(intScrimmageY - 25)
+						elseif objects.ball[i].body:getY() > SclFactor(intScrimmageY - 5) then
+							objects.ball[i].targetcoordX = SclFactor(fltCentreLineX)
+							objects.ball[i].targetcoordY = SclFactor(intScrimmageY - 5)
 						else
-							x3 = intRightLineX
-							closeDistance3 = SclFactor(intRightLineX) - objects.ball[i].body:getX()
+							-- do some player avoidance
+
+							-- This will fail if too many players fall over
+							-- Determine the closest players, including own team
+							closePlayer1, closeDistance1 =  DetermineClosestEnemy(i, "", True)
+							x1 = objects.ball[closePlayer1].body:getX()
+							y1 = objects.ball[closePlayer1].body:getY()
+							
+							-- closePlayer2, closeDistance2 =  Determine2ndClosestEnemy(i, "", True)
+							-- x2 = objects.ball[closePlayer2].body:getX()
+							-- y2 = objects.ball[closePlayer2].body:getY()	
+							
+							-- get some imaginary bounding box
+							--  top left
+							--x3 = SclFactor(intLeftLineX)
+							--y3 = SclFactor(intScrimmageY - 15)
+							
+							--  top right
+							--x4 = SclFactor(intRightLineX)
+							--y4 = SclFactor(intScrimmageY - 15)
+							
+							-- bottom right
+							--x5 = SclFactor(intRightLineX)
+							--y5 = SclFactor(intScrimmageY + 15)
+							
+							-- bottom left
+							--x6 = SclFactor(intLeftLineX)
+							--y6 = SclFactor(intScrimmageY + 15)
+							
+							Scale1 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x1, y1)	
+							-- we have closeDistance1 above. Would be more efficient to use that --!
+							
+							-- Scale2 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x2, y2)
+							--Scale3 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x3, y3)
+							--Scale4 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x4, y4)
+							--Scale5 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x5, y5)
+							--Scale6 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x6, y6)
+							
+							
+							-- Normalise the scales
+							TotalScale = Scale1 -- + Scale3 + Scale4 + Scale5 + Scale6
+							Scale1 = Scale1/TotalScale
+							-- Scale2 = Scale2/TotalScale
+							--Scale3 = Scale3/TotalScale
+							--Scale4 = Scale4/TotalScale
+							--Scale5 = Scale5/TotalScale
+							--Scale6 = Scale6/TotalScale
+						
+							-- apply avoidance vector for closest player
+							-- scale the vector before applying it
+							X1scaled,Y1scaled = ScaleVector(x1,y1,Scale1)
+							--X2scaled,Y2scaled = ScaleVector(x2,y2,Scale2)
+							--X3scaled,Y3scaled = ScaleVector(x3,y3,Scale3)
+							--X4scaled,Y4scaled = ScaleVector(x4,y4,Scale4)
+							--X5scaled,Y5scaled = ScaleVector(x5,y5,Scale5)
+							--X6scaled,Y6scaled = ScaleVector(x6,y6,Scale6)
+							
+							
+							-- apply this avoidance vector to the current target
+							finalvectorX,finalvectorY = SubtractVectors(objects.ball[i].targetcoordX,objects.ball[i].targetcoordY,X1scaled,Y1scaled)
+							
+							-- apply avoidance vector for 2nd closest player
+							-- scale the vector before applying it
+							--X2scaled,Y2scaled = ScaleVector(x2,y2,Scale2)
+							--finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X2scaled,Y2scaled)
+												
+							-- apply this avoidance vector to the current target
+							-- finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X3scaled,Y3scaled)
+							-- finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X4scaled,Y4scaled)
+							-- finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X5scaled,Y5scaled)
+							-- finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X6scaled,Y6scaled)
+							
+							-- set target to that vector
+							objects.ball[i].targetcoordX = objects.ball[i].body:getX() + finalvectorX
+							objects.ball[i].targetcoordY = objects.ball[i].body:getY() + finalvectorY
 						end
-						y3 = objects.ball[i].body:getY()
-						
-						Scale1 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x1, y1)	
-						-- we have closeDistance1 above. Would be more efficient to use that --!
-						
-						Scale2 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x2, y2)
-						Scale3 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x3, y3)
-						
-						-- Normalise the scales
-						TotalScale = Scale1 + Scale2 + Scale3
-						Scale1 = Scale1/TotalScale
-						Scale2 = Scale2/TotalScale
-						Scale3 = Scale3/TotalScale
-						
-						if i == 2 then
-						print("For player " .. i .. " the closest player is " .. closePlayer1 .. " and scale % = " .. Scale1)
-						print("For player " .. i .. " the 2nd closest player is " .. closePlayer2 .. " and scale % = " .. Scale2)
-						print("For player " .. i .. " the closest player is " .. closePlayer1 .. " and scale % = " .. Scale3)
-						print("===")
-						end
-						
-						-- apply avoidance vector for closest player
-						-- scale the vector before applying it
-						X1scaled,Y1scaled = ScaleVector(x1,y1,Scale1)
-						
-						-- apply this avoidance vector to the current target
-						finalvectorX,finalvectorY = SubtractVectors(objects.ball[i].targetcoordX,objects.ball[i].targetcoordY,X1scaled,Y1scaled)
-						
-						-- apply avoidance vector for 2nd closest player
-						-- scale the vector before applying it
-						X2scaled,Y2scaled = ScaleVector(x2,y2,Scale2)
-						
-						-- apply this avoidance vector to the current target
-						finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X2scaled,Y2scaled)
-											
-						-- apply avoidance vector for closest sideline
-						-- scale the vector before applying it
-						X3scaled,Y3scaled = ScaleVector(x3,y3,Scale3)
-						
-						-- apply this avoidance vector to the current target
-						finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X3scaled,Y3scaled)
-						
-						-- set target to that vector
-						objects.ball[i].targetcoordX = objects.ball[i].body:getX() + finalvectorX
-						objects.ball[i].targetcoordY = objects.ball[i].body:getY() + finalvectorY
-						
 					else
 						-- route 1 is the first route, or current route
 						objects.ball[i].targetcoordX = SclFactor(playerroutes[i][1][1])	-- player i, route 1, x value
@@ -2166,6 +2202,9 @@ function love.update(dt)
 			bolPlayOver = true
 			--print("Ball carrier is tackled.")
 			strMessageBox = "The ball carrier was tackled."
+			
+			mudpair = {objects.ball[intBallCarrier].body:getX(),objects.ball[intBallCarrier].body:getY()}
+			table.insert(mudimages,mudpair)
 		end	
 	end
 	
