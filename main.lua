@@ -1,6 +1,6 @@
 --require "sstrict.sstrict"
 
-gameversion = "v0.11"
+gameversion = "v0.12"
 
 require "dabuton" --Require the library so we can use it.
 Camera = require "hump.camera"
@@ -66,6 +66,7 @@ intBallCarrier = 1		-- this is the player index that holds the ball. 0 means for
 fltPersonWidth = 1.5
 bolPlayOver = false
 bolEndGame = false
+bolMoveChains = false
 
 soundgo = love.audio.newSource("go.wav", "static") -- the "static" tells LÖVE to load the file into memory, good for short sound effects
 soundwhistle = love.audio.newSource("whistle.wav", "static") -- the "static" tells LÖVE to load the file into memory, good for short sound effects
@@ -86,9 +87,6 @@ footballimage = love.graphics.newImage("football.png")
 imgmudimage[1] = love.graphics.newImage("mudv1.png")
 
 imgPlayerImages[1] = love.graphics.newImage("blueplayer1.png")
-
-
-
 
 
 -- *******************************************************************************************************************
@@ -273,9 +271,21 @@ function DrawStadium()
 	local intGreen = 255
 	local intBlue = 255
 	love.graphics.setColor(intRed/255, intGreen/255, intBlue/255)
-	for i = 0,12
+	for i = 0,20
 	do
-		love.graphics.line(SclFactor(intLeftLineX),SclFactor(15 +( i*10)),SclFactor(68),SclFactor(15 +( i*10)))
+		love.graphics.line(SclFactor(intLeftLineX),SclFactor(intTopGoalY +( i*5)),SclFactor(intRightLineX),SclFactor(intTopGoalY +( i*5)))
+	end
+	
+	-- draw left and right mini-yard lines
+	love.graphics.setColor(intRed/255, intGreen/255, intBlue/255)
+	for i = 1, 99 do
+		love.graphics.line(SclFactor(intLeftLineX + 1),SclFactor(intTopGoalY + i),SclFactor(intLeftLineX + 2),SclFactor(intTopGoalY + i))
+		
+		-- draw left and right hash marks (inbound lines		
+		love.graphics.line(SclFactor(intLeftLineX + 22), SclFactor(intTopGoalY + i), SclFactor(intLeftLineX + 23),SclFactor(intTopGoalY + i))
+		love.graphics.line(SclFactor(intRightLineX - 23), SclFactor(intTopGoalY + i), SclFactor(intRightLineX - 22),SclFactor(intTopGoalY + i))
+		
+		love.graphics.line(SclFactor(intRightLineX -2),SclFactor(intTopGoalY + i),SclFactor(intRightLineX - 1),SclFactor(intTopGoalY + i))
 	end
 	
 	--draw sidelines
@@ -460,6 +470,23 @@ function DrawPlayersVelocity()
 		love.graphics.setColor(0, 0, 0,1,0.5) --set the drawing color
 		love.graphics.line(objX, objY, objXvel ,objYvel)	
 	
+	end
+
+end
+
+function DrawDottedLine(x1,y1,x2,y2)
+	love.graphics.setPointSize(1)
+	
+	local x,y = x2-x1, y2-y1
+	local mylen = math.sqrt(x^2 + y^2)
+	local stepx,stepy = x/mylen, y/mylen
+	x = x1
+	y = y1
+	for i = 1, mylen do
+		love.graphics.setColor(1, 1, 1) --set the drawing color
+		love.graphics.points(x,y)
+		x=x+stepx
+		y=y+stepy
 	end
 
 end
@@ -1272,7 +1299,7 @@ function SetSafetyTargets()
 			objects.ball[i].targetcoordX = football.targetx		
 			objects.ball[i].targetcoordY = football.targety					
 			
-			-- position between the ball target and the goal linear
+			-- position between the ball target and the goal line
 			if football.targety > SclFactor(intTopGoalY) then	-- if ball target is in goal zone then the default rush it behaviour is correct, otherwise, do this next bit
 			
 				--print(football.targety,intTopGoalY,SclFactor(intTopGoalY))
@@ -1282,19 +1309,57 @@ function SetSafetyTargets()
 		end	
 
 		if strGameState == "Running" then
-			SetPlayerTargetToAnotherPlayer(i,intBallCarrier, -2,-2)
-
-			-- we don't want the safety to run forwards (down the screen) cause this makes them overshoot the runner
-			if objects.ball[i].targetcoordY > objects.ball[i].body:getY() then
-				objects.ball[i].targetcoordY = objects.ball[i].body:getY()
+			
+			-- get the vector from runner to the goal line
+			x1 = objects.ball[intBallCarrier].body:getX()
+			y1 = objects.ball[intBallCarrier].body:getY()
+			
+			x2 = x1
+			y2 = SclFactor(intTopGoalY)
+			
+			-- get the distance from the runner to the goal
+			mydist1 = GetDistance(x1, y1, x2, y2)
+			
+			-- get the distance from safety to the runner
+			mydist2 = GetDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x1, y1)
+			
+			-- get the ratio of distance from player to runner and runner to goal
+			myratio = mydist2/mydist1
+			
+			-- progress along runners vector by that same distance
+			-- x3/y3 is the vector created between x1/y1,x2/y2
+			x3 = x2-x1
+			y3 = y2-y1
+			
+			-- scale this vector
+			x3scaled, y3scaled = ScaleVector(x3,y3,myratio)
+			
+			-- set target to that new spot along the vector
+			-- add the scaled vector to the runners position
+			objects.ball[i].targetcoordX =	x1 + x3scaled
+			objects.ball[i].targetcoordY = 	y1 + y3scaled
+			
+			-- make sure the target is not beyond the goal
+			if (objects.ball[i].targetcoordY / fltScaleFactor) < intTopGoalY then
+				objects.ball[i].targetcoordY = SclFactor(intTopGoalY)
 			end
+			
+			--[[
+			if i == 22 then
+				print(x1, y1)
+				print(x2,y2)
+				print(mydist1)
+				print(mydist2)
+				print(myratio)
+				print(x3,y3)
+				print(x3scaled,y3scaled)
+				print("=====================")
+			end	
+			]]--
+
 		end			
 		
 	end
-
-	
-
-	
 
 end
 
@@ -1416,6 +1481,12 @@ function GetDistance(x1, y1, x2, y2)
     local c = a + b
     local distance = math.sqrt(c)
     return distance
+end
+
+function ScaleVector(x,y,fctor)
+	-- Receive a vector (0,0, -> x,y) and scale/multiply it by factor
+	-- returns a new vector (assuming origin)
+	return x * fctor, y * fctor
 end
 
 function SubtractVectors(x1,y1,x2,y2)
@@ -1691,10 +1762,10 @@ function round(num, idp)
 	return tonumber(string.format("%." .. (idp or 0) .. "f", num))
 end	
 
-
 function GetInverseSqrtDistance(x1, y1, x2, y2)
 	return 1/math.sqrt(((x2-x1)^2)+((y2-y1)^2))
 end
+
 function SetPlayersFallen(bolNewSetting)
 
 	for i = 1,intNumOfPlayers do
@@ -1719,12 +1790,6 @@ function getDistance(x1, y1, x2, y2)
     local c = a + b
     local distance = math.sqrt(c)
     return distance
-end
-
-function ScaleVector(x,y,fctor)
-	-- Receive a vector (0,0, -> x,y) and scale/multiply it by factor
-	-- returns a new vector (assuming origin)
-	return x * fctor, y * fctor
 end
 
 function UpdateBallPosition(dtime)
@@ -1759,7 +1824,7 @@ function UpdateBallPosition(dtime)
 			-- oops - end play
 			bolPlayOver = true
 			strMessageBox = "Ball was thrown out of bounds. Incomplete."
-
+			bolMoveChains = false
 		else
 			--! will need to determine if ball is caught
 			
@@ -1788,8 +1853,6 @@ function UpdateBallPosition(dtime)
 				end
 			end
 			
-			
-			
 			intBallCarrier = closestplayer
 			football.carriedby = closestplayer
 			
@@ -1807,7 +1870,8 @@ function UpdateBallPosition(dtime)
 				-- oops - end play
 				bolPlayOver = true
 				--print("Knocked down.")
-				strMessageBox = "Ball was knocked down. Incomplete."
+				strMessageBox = "Ball was knocked down by other team. Incomplete."
+				bolMoveChains = false
 			else
 				-- someone on the offense team caught the ball so that's okay. Check if they fumble it
 				--! might want to build in proximity modifiers at some point
@@ -1818,7 +1882,8 @@ function UpdateBallPosition(dtime)
 				else
 					-- ball dropped
 					bolPlayOver = true
-					strMessageBox = "Ball was fumbled and dropped. Incomplete."					
+					strMessageBox = "Ball was fumbled and dropped. Incomplete."		
+					bolMoveChains = false					
 				end
 			end	
 
@@ -1862,6 +1927,7 @@ function ResetGame()
 		bolCheerPlayed = false
 		bolPlayOver = false
 		bolEndGame = false
+		bolMoveChains = true
 		soundwin:stop()
 		soundlost:stop()
 		SetRouteStacks()
@@ -2078,16 +2144,19 @@ function love.mousereleased(x, y, button)
 						-- determine random ball accuracy
 						-- this is a random vector and random direction
 						local intplayerinaccuracy = objects.ball[1].throwaccuracy 
+						print("Throw inaccuracy = " .. intplayerinaccuracy .. "%")
 						
 						-- add some inaccuracy based on distance between thrower and intended click
-						-- if throw > 15 then add some randomness	-- 15 is arbitrary value
+						-- if throw > 15 then add some randomness	-- 20 is arbitrary value
 						local mydistance = getDistance(objects.ball[1].body:getX(), objects.ball[1].body:getY(), x, y)
-						if mydistance > 15 then
-							-- take the distance over 15 yards, divide by 10, then add that to inaccuracy
-							myinacc = round((love.math.random(0, (mydistance - 15) / 10)),0)
+						if mydistance > 20 then
+							-- take the distance over 20 yards, divide by 15, then add that to inaccuracy
+							myinacc = round((love.math.random(0, (mydistance - 20) / 15)),0)
 							
 							intplayerinaccuracy = intplayerinaccuracy + myinacc
-							--print ("Inacc is now " .. myinacc)
+							print("Adding distance factor of " .. myinacc)
+							print("Inacc is now " .. intplayerinaccuracy)
+							print("=========")
 						end
 						
 						
@@ -2200,6 +2269,7 @@ function love.update(dt)
 	if intBallCarrier > 0 then
 		if objects.ball[intBallCarrier].fallendown == true then
 			bolPlayOver = true
+			bolMoveChains = true
 			--print("Ball carrier is tackled.")
 			strMessageBox = "The ball carrier was tackled."
 			
@@ -2252,20 +2322,21 @@ function love.update(dt)
 		bolPlayOver = false
 		strGameState = "FormingUp"
 		
-
 		SetPlayersSensors(false,0)	-- turn off collisions
 		SetPlayersFallen(false)		-- everyone stands up
+		
 		-- SetTargets				-- no need to set targets here - it will be done in the forming stage
 
 		score.downs = score.downs + 1
 		score.plays = score.plays + 1
 		
 		--adjust line of scrimmage
-		if intBallCarrier > 0 and intBallCarrier < 12 then
-			intScrimmageY = (objects.ball[intBallCarrier].body:getY() / fltScaleFactor ) 
-			
+		if bolMoveChains then	-- this defaults to TRUE and changed to FALSE if thrown out of bounds, fumbled or knocked down.
+			if intBallCarrier > 0 and intBallCarrier < 12 then
+				intScrimmageY = (objects.ball[intBallCarrier].body:getY() / fltScaleFactor ) 
+			end
 		end
-	
+
 		-- check if 1st down
 		if intScrimmageY < intFirstDownMarker then
 			-- print("LoS =" .. intScrimmageY .. " FDM = " .. intFirstDownMarker)
@@ -2273,11 +2344,11 @@ function love.update(dt)
 		
 			intFirstDownMarker = intScrimmageY - 10
 			if intFirstDownMarker < intTopGoalY then intFirstDownMarker = intTopGoalY end
-		end
-
+		end		
+		
 		-- update yards to go
 		score.yardstogo = round((intScrimmageY - intFirstDownMarker),0) 
-		
+
 		-- check for end game
 		if score.downs > 4 then
 			--print("Turnover on downs.")
@@ -2397,6 +2468,11 @@ function love.draw()
 	
 	if strGameState == "FormingUp" then
 		DrawRoutes()
+	end
+	
+	if strGameState == "Airborne" then
+		DrawDottedLine(football.x +15,football.y + 5,football.targetx,football.targety)
+	
 	end
 	
 	if bolEndGame then
