@@ -304,9 +304,9 @@ function DrawStadium()
 	--love.graphics.line(SclFactor(41.5),SclFactor(15),SclFactor(41.5), SclFactor(135))
 	
 	-- draw mud
-	love.graphics.setColor(1, 1, 1,0.3)
+	love.graphics.setColor(1, 1, 1,0.6)
 	for i = 1, #mudimages do
-		love.graphics.draw(imgmudimage[1],mudimages[i][1],mudimages[i][2],0, 0.25,0.25, 20,20)
+		love.graphics.draw(imgmudimage[1],mudimages[i][1],mudimages[i][2],0, 0.50,0.50, 20,20)
 	end
 	
 	--draw scrimmage
