@@ -966,6 +966,64 @@ function SetWRTargets()
 
 end
 
+function SetOffensiveRow()
+	-- sets the five front-rowers
+	-- #10, #8, #7, #9, #11
+	
+	local intNumofActivePlayers = 0		-- track how many front rowers are on their feet
+	
+	if strGameState == "Looking" then
+		-- get num active players
+		for i = 7,11 do
+			if objects.ball[i].fallendown == false then
+				intNumofActivePlayers = intNumofActivePlayers + 1
+			end
+		end
+
+		-- formula for X placement: x coord = zone offset * (i-1) + zonesize
+		-- this means space the players 'zonesize' apart, but then place them in the middle of that zone (offset)
+			
+		fltZoneSize = 18 / intNumofActivePlayers	-- 17 yards of front row shared between all active front row players
+		fltZoneSizeOffset = fltZoneSize / 2			-- this positions the player in the middle of the zone
+		
+		local intZoneNumber = 1		-- track the next zone
+		local intStartofFront = fltCentreLineX - 9	-- front zone is x yards wide so start half the distance from the centre
+		for i = 1,5 do
+		
+			if i == 1 then pnum = 10 end	-- sadly, we can't cycle through 7 ->11. It needs to be left side then centre then right side
+			if i == 2 then pnum = 8 end
+			if i == 3 then pnum = 7 end
+			if i == 4 then pnum = 9 end
+			if i == 5 then pnum = 11 end
+		
+			if objects.ball[pnum].fallendown == false then
+				objects.ball[pnum].targetcoordX = SclFactor(intStartofFront + (fltZoneSizeOffset * (intZoneNumber - 1) + fltZoneSize))
+				objects.ball[pnum].targetcoordY = objects.ball[1].body:getY() - SclFactor(10)
+				intZoneNumber = intZoneNumber + 1
+				
+				--if pnum == 7 then
+					--print(fltZoneSize, fltZoneSizeOffset, intStartofFront, objects.ball[pnum].targetcoordX)
+				--end
+			end
+		end
+
+	end
+	
+	if strGameState == "Running" then
+		for i = 7,11 do
+			if intBallCarrier == i then
+				-- player is now the runner
+				-- run!!
+				SetPlayerTargetToGoal(i)
+			else
+				-- run 10 yards in front of carrier
+				SetPlayerTargetToAnotherPlayer(i,intBallCarrier, 0, -10)
+			end
+		end
+	end
+
+end
+
 function SetCentreTargets()
 
 	-- Centre is #7
@@ -1390,19 +1448,15 @@ function SetSnappedTargets()
 	SetTETargets()
 	
 	-- player 7 = Centre
-	SetCentreTargets()
-	
 	-- player 8 = left guard offense
 	-- player 9 = right guard offense
-	SetOffensiveGuardTargets()
-	
 	-- player 10 = left tackle 
-	objects.ball[10].targetcoordX = SclFactor(fltCentreLineX - 8)	 
-	objects.ball[10].targetcoordY = SclFactor(intScrimmageY -15)			
-
 	-- player 11 = right tackle 
-	objects.ball[11].targetcoordX = SclFactor(fltCentreLineX -2)	 
-	objects.ball[11].targetcoordY = SclFactor(intScrimmageY -15)			
+	SetOffensiveRow()
+		
+	-- SetCentreTargets()
+	--SetOffensiveGuardTargets()
+		
 
 -- now for the visitors
 
@@ -2465,6 +2519,17 @@ function love.draw()
 		love.graphics.setColor(1, 0, 0,0.75) --set the drawing color
 		love.graphics.circle("line", objects.ball[1].targetcoordX, objects.ball[1].targetcoordY, objects.ball[1].shape:getRadius())	
 	end
+	
+	-- draw centre target for debugging purposes
+	if strGameState == "Looking" then
+		-- draw QB target 
+		love.graphics.setColor(1, 0, 0,0.75) --set the drawing color
+		love.graphics.circle("line", objects.ball[7].targetcoordX, objects.ball[7].targetcoordY, objects.ball[7].shape:getRadius())
+		love.graphics.circle("line", objects.ball[8].targetcoordX, objects.ball[8].targetcoordY, objects.ball[8].shape:getRadius())
+		love.graphics.circle("line", objects.ball[9].targetcoordX, objects.ball[9].targetcoordY, objects.ball[9].shape:getRadius())
+		love.graphics.circle("line", objects.ball[10].targetcoordX, objects.ball[10].targetcoordY, objects.ball[10].shape:getRadius())
+		love.graphics.circle("line", objects.ball[11].targetcoordX, objects.ball[11].targetcoordY, objects.ball[11].shape:getRadius())		
+	end	
 	
 	if strGameState == "FormingUp" then
 		DrawRoutes()
