@@ -1,28 +1,31 @@
 --require "sstrict.sstrict"
 
-gameversion = "v0.12"
+gameversion = "v0.13"
 
-require "dabuton" --Require the library so we can use it.
+local Slab = require 'Slab'
+
 Camera = require "hump.camera"
 fltCameraSmoothRate = 0.025	-- how fast does the camera zoom
 fltFinalCameraZoom = 1		-- the needed/required zoom rate
 fltCurrentCameraZoom = 1	-- the camera won't tell us it's zoom so we need to track it globally
 
 strGameState = "FormingUp"
+strPreviousGameState = strGameState
 strMessageBox = "Players getting ready"	
 intNumOfPlayers = 22
 
 -- Stadium constants
 fltScaleFactor = 6
-intLeftLineX = 15
-intRightLineX = intLeftLineX + 53
+intLeftLineX = 15	-- how many metres to leave at the leftside of the field?
 intTopPostY = 15	-- how many metres to leave at the top of the screen?
-intBottomPostY = 135
-fltCentreLineX = intLeftLineX + (53/2)	-- left line + half of the field
-intTopGoalY = 25
-intBottomGoalY = 125
+intFieldWidth = 53	-- how wide (yards/metres) is the field?
+intRightLineX = intLeftLineX + intFieldWidth
+intBottomPostY = intTopPostY + 120
+fltCentreLineX = intLeftLineX + (intFieldWidth/2)	-- left line + half of the field
+intTopGoalY = intTopPostY + 10
+intBottomGoalY = intTopPostY + 110
 
-intScrimmageY = 105
+intScrimmageY = intTopPostY + 90
 intFirstDownMarker = intScrimmageY - 10		-- yards
 
 -- Uniforms
@@ -245,27 +248,32 @@ function SclFactor(intNumber)
 end
 
 function DrawStadium()
+
 	--top goal
 	local intRed = 153
 	local intGreen = 153
 	local intBlue = 255	
 	love.graphics.setColor(intRed/255, intGreen/255, intBlue/255)
-	love.graphics.rectangle("fill", SclFactor(intLeftLineX),SclFactor(intTopPostY),SclFactor(53),SclFactor(10),1)
+	-- rectangles are width and height 
+	love.graphics.rectangle("fill", SclFactor(intLeftLineX),SclFactor(intTopPostY),SclFactor(intFieldWidth),SclFactor(10),1)
 	
 	--bottom goal
 	local intRed = 255
 	local intGreen = 153
 	local intBlue = 51	
 	love.graphics.setColor(intRed/255, intGreen/255, intBlue/255)	
-	love.graphics.rectangle("fill", SclFactor(intLeftLineX),SclFactor(125), SclFactor(53),SclFactor(10))
+	-- rectangles are width and height 
+	love.graphics.rectangle("fill", SclFactor(intLeftLineX),SclFactor(125), SclFactor(intFieldWidth),SclFactor(10))
 	
 	--field
 	local intRed = 69
 	local intGreen = 172
 	local intBlue = 79
 	love.graphics.setColor(intRed/255, intGreen/255, intBlue/255)	
-	love.graphics.rectangle("fill", SclFactor(intLeftLineX),SclFactor(25),SclFactor(53),SclFactor(100))
+	-- rectangles are width and height 
+	love.graphics.rectangle("fill", SclFactor(intLeftLineX),SclFactor(25),SclFactor(intFieldWidth),SclFactor(100))
 	
+
 	--draw yard lines
 	local intRed = 255
 	local intGreen = 255
@@ -275,16 +283,19 @@ function DrawStadium()
 	do
 		love.graphics.line(SclFactor(intLeftLineX),SclFactor(intTopGoalY +( i*5)),SclFactor(intRightLineX),SclFactor(intTopGoalY +( i*5)))
 	end
+
 	
 	-- draw left and right mini-yard lines
 	love.graphics.setColor(intRed/255, intGreen/255, intBlue/255)
 	for i = 1, 99 do
+		-- draw left tick mark
 		love.graphics.line(SclFactor(intLeftLineX + 1),SclFactor(intTopGoalY + i),SclFactor(intLeftLineX + 2),SclFactor(intTopGoalY + i))
 		
-		-- draw left and right hash marks (inbound lines		
+		-- draw left and right hash marks (inbound lines)		
 		love.graphics.line(SclFactor(intLeftLineX + 22), SclFactor(intTopGoalY + i), SclFactor(intLeftLineX + 23),SclFactor(intTopGoalY + i))
 		love.graphics.line(SclFactor(intRightLineX - 23), SclFactor(intTopGoalY + i), SclFactor(intRightLineX - 22),SclFactor(intTopGoalY + i))
 		
+		-- draw right tick lines
 		love.graphics.line(SclFactor(intRightLineX -2),SclFactor(intTopGoalY + i),SclFactor(intRightLineX - 1),SclFactor(intTopGoalY + i))
 	end
 	
@@ -294,7 +305,7 @@ function DrawStadium()
 	local intBlue = 255	
 	love.graphics.setColor(intRed/255, intGreen/255, intBlue/255)
 	love.graphics.line(SclFactor(15),SclFactor(15),SclFactor(15),SclFactor(135))
-	love.graphics.line(SclFactor(68),SclFactor(15),SclFactor(68),SclFactor(135))
+	love.graphics.line(SclFactor(intRightLineX),SclFactor(15),SclFactor(intRightLineX),SclFactor(135))
 	
 	--draw centre line (for debugging)
 	--local intRed = 255
@@ -315,7 +326,7 @@ function DrawStadium()
 	local intBlue = 169
 	love.graphics.setColor(intRed/255, intGreen/255, intBlue/255,1)
 	love.graphics.setLineWidth(5)
-	love.graphics.line(SclFactor(15),SclFactor(intScrimmageY),SclFactor(68), SclFactor(intScrimmageY))	
+	love.graphics.line(SclFactor(15),SclFactor(intScrimmageY),SclFactor(intRightLineX), SclFactor(intScrimmageY))	
 	love.graphics.setLineWidth(1)	-- return width back to default
 	
 	-- draw first down marker
@@ -324,8 +335,10 @@ function DrawStadium()
 	local intBlue = 51
 	love.graphics.setColor(intRed/255, intGreen/255, intBlue/255,1)
 	love.graphics.setLineWidth(5)
-	love.graphics.line(SclFactor(15),SclFactor(intFirstDownMarker),SclFactor(68), SclFactor(intFirstDownMarker))	
+	love.graphics.line(SclFactor(15),SclFactor(intFirstDownMarker),SclFactor(intRightLineX), SclFactor(intFirstDownMarker))	
 	love.graphics.setLineWidth(1)	-- return width back to default	
+
+	
 
 	--DrawScores()
 	
@@ -492,6 +505,106 @@ function DrawDottedLine(x1,y1,x2,y2)
 		y=y+stepy
 	end
 
+end
+
+function DrawSidebar()
+	local sidebarwidth = 120
+	
+	local x = love.graphics.getWidth() - sidebarwidth
+	local y = 0
+	local w = sidebarwidth -- width
+	local h = love.graphics.getHeight()
+	
+	Slab.BeginWindow('sidebar',{AutoSizeWindow=false,NoOutline=true,X=x,Y=y,W=w,H=h})
+	
+	-- render the score
+	Slab.Text("Downs:")
+	Slab.SameLine()
+	Slab.Text(score.downs)
+	Slab.Text("Yards to go:")
+	Slab.SameLine()
+	Slab.Text(score.yardstogo)	
+	Slab.Text("Num of plays:")
+	Slab.SameLine()
+	Slab.Text(score.plays)
+
+	-- draw the RESET button
+	if bolEndGame then
+		if Slab.Button("Reset") then
+			ResetGame()
+		end
+	end
+	Slab.EndWindow()
+
+end
+
+function DrawMessageBox()
+	local msgboxwidth = 400
+	local msgboxheight = 25
+	-- centre box on screen
+	local x = love.graphics.getWidth()/2 - msgboxwidth/2
+	local y = 20	-- arbitrary value
+	
+	Slab.BeginWindow('msgbox',{AutoSizeWindow=false,NoOutline=false,X=x,Y=y,W=msgboxwidth,H=msgboxheight})
+	Slab.Textf(strMessageBox,{Align="center"})
+	Slab.EndWindow()
+end
+
+function DrawCreditsButton()
+	local sidebarwidth = 120
+	
+	local x = love.graphics.getWidth() - sidebarwidth
+	local h = love.graphics.getHeight()
+	local y = h - 100	-- arbitrary
+	local w = sidebarwidth -- width
+
+	
+	Slab.BeginWindow('aboutbox',{AutoSizeWindow=false,NoOutline=true,X=x,Y=y,W=w,H=h})
+
+	if Slab.Button("Credits") then
+		strPreviousGameState = strGameState
+		strGameState = "CreditsBox"
+	end
+	Slab.EndWindow()
+	
+end
+
+function DrawCreditsBox()
+	-- centre box on screen
+	local x = love.graphics.getWidth()/2 - 150
+	local y = love.graphics.getHeight()/2 - 250	-- arbitrary value
+
+	
+	Slab.BeginWindow('creditsbox',{Title ='About',BgColor = {0.5,0.5,0.5},AutoSizeWindow = true,NoOutline=true,AllowMove=false,X=x,Y=y})
+	
+	Slab.BeginLayout('mylayout', {AlignX = 'center'})	
+    Slab.Text("Love Football by Gary Campbell 2021")
+	Slab.NewLine()
+	Slab.Text("Thanks to beta testers:",{Align = 'center'})
+	Slab.Textf("Yuki Yu",{Align = 'right'})
+	Slab.NewLine()
+	Slab.Text("Thanks to the Love2D community")
+	Slab.NewLine()	
+	
+	fltHyperlinkColorR = 1
+	fltHyperlinkColorG = 0.9
+	fltHyperlinkColorG = 0.1
+	Slab.Text("Acknowledgements:")
+	Slab.Text("Love2D", {URL="https://love2d.org",Color={1,1,1}, IsSelectable = true, IsSelectableTextOnly = true, HoverColor = {fltHyperlinkColorR,fltHyperlinkColorG,fltHyperlinkColorG}})
+	Slab.Text("HUMP for Love2D", {URL="https://github.com/vrld/hump", IsSelectable = true, IsSelectableTextOnly = true, HoverColor = {fltHyperlinkColorR,fltHyperlinkColorG,fltHyperlinkColorG}})	
+	Slab.Text("SLAB for Love2D", {URL="https://github.com/coding-jackalope/Slab", IsSelectable = true, IsSelectableTextOnly = true, HoverColor = {fltHyperlinkColorR,fltHyperlinkColorG,fltHyperlinkColorG}})	
+	Slab.Text("freesound.org", {URL="https://freesound.org/",Color={1,1,1}, IsSelectable = true, IsSelectableTextOnly = true, HoverColor = {fltHyperlinkColorR,fltHyperlinkColorG,fltHyperlinkColorG}})
+	Slab.Text("Kenney.nl", {URL="https://kenney.nl", IsSelectable = true, IsSelectableTextOnly = true, HoverColor = {fltHyperlinkColorR,fltHyperlinkColorG,fltHyperlinkColorG}})
+	Slab.Text("Dark Fantasy Studio", {URL="http://darkfantasystudio.com/", IsSelectable = true, IsSelectableTextOnly = true, HoverColor = {fltHyperlinkColorR,fltHyperlinkColorG,fltHyperlinkColorG}})
+	Slab.NewLine()
+	
+	if Slab.Button("Awesome!") then
+		-- return to the previous game state
+		strGameState = strPreviousGameState
+	end
+	
+	Slab.EndLayout()
+	Slab.EndWindow()
 end
 
 function SetPlayerTargets()
@@ -1745,54 +1858,54 @@ function ProcessKeyInput()
 		-- important to process diagonals first
 		
 		if bolMoveup and bolMoveLeft then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - 20)	 
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - 20)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - 35)	 
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - 35)
 			-- reset these keys so they don't get processed twice
 			bolMoveUp = false
 			bolMoveLeft = false
 			--print("alpha")
 		end
 		if bolMoveup and bolMoveRight then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + 20)	 
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - 20)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + 35)	 
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - 35)
 			-- reset these keys so they don't get processed twice
 			bolMoveUp = false
 			bolMoveRight = false
 			--print("beta")
 		end	
 		if bolMoveDown and bolMoveRight then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + 20)	 
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + 20)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + 35)	 
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + 35)
 			-- reset these keys so they don't get processed twice
 			bolMoveDown = false
 			bolMoveRight = false
 			--print("charlie")
 		end				
 		if bolMoveDown and bolMoveLeft then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - 20)	 
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + 20)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - 35)	 
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + 35)
 			-- reset these keys so they don't get processed twice
 			bolMoveDown = false
 			bolMoveLeft = false
 			--print("delta")
 		end			
 		if bolMoveUp then
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - 20)
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - 35)
 			bolMoveUp = false
 			--print("echo")
 		end			
 		if bolMoveRight then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + 20)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + 35)
 			bolMoveRight = false
 			--print("foxtrot")
 		end	
 		if bolMoveDown then
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + 20)
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + 35)
 			bolMoveDown = false
 			--print("golf")
 		end	
 		if bolMoveLeft then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - 20)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - 35)
 			bolMoveLeft = false
 			--print("hotel")
 		end	
@@ -2110,19 +2223,6 @@ function SetCameraView()
 	AdjustCameraZoom(camera)
 end
 
-function LoadButtons()
-	-- https://github.com/tjakka5/Dabuton
-	local flags = {
-		xPos = SclFactor(intRightLineX + 5), yPos = SclFactor(intBottomPostY - 10), width = 100, height = 40, 
-		color = {red = 255, green = 0, blue = 0},
-		border = {width = 2, red = 1, green = 1, blue = 1},
-		onClick = {func = ResetGame, args = {}}
-	}
-	id = button.spawn(flags)	--Spawn the button
-	
-	
-end
-
 function DrawPlayerStats(i, intPanelNum)
 	-- Draw a player panel for player #1 in panel position intPanelNum
 
@@ -2302,6 +2402,7 @@ end
 
 function love.load()
 
+
 	fltScaleFactor = 6	-- this is the ScaleFactor if window is 1920 / 1080
 	
 	local scrnWidth,scrnHeight = love.window.getDesktopDimensions(1)
@@ -2310,11 +2411,10 @@ function love.load()
 	fltScaleFactor = fltScaleFactor / applyRatio	-- Scale the app to fit in the window
 	
 	--set window
-	void = love.window.setMode(SclFactor(200), SclFactor(150))
+	love.graphics.setBackgroundColor(0, 102/255, 0)
+	void = love.window.setMode(SclFactor(120), SclFactor(150))
 	love.window.setTitle("Love football " .. gameversion)
 	
-	LoadButtons()
-
 	InstantiatePlayers()
 	
 	CustomisePlayers()
@@ -2324,21 +2424,37 @@ function love.load()
 	camera = Camera(objects.ball[1].body:getX(), objects.ball[1].body:getY())
 	camera.smoother = Camera.smooth.linear(100)
 	
+	Slab.Initialize(args)
+	
 	strGameState = "FormingUp"	-- this is not necessary here but just making sure
 
 end
 
 function love.update(dt)
-
-	button.update()
 	
+	-- print(strGameState)
+	
+	Slab.Update(dt)
+	
+	DrawSidebar()
+	DrawMessageBox()
+	if strGameState ~= "CreditsBox" then
+		DrawCreditsButton()
+	end
+	
+	if strGameState == "CreditsBox" then
+		DrawCreditsBox()
+	end
+
+
 	SetCameraView()
 	
 	SetPlayerTargets()
 	
-	ProcessKeyInput() 
-	
+	ProcessKeyInput() -- this must be in the main loop as it sets key press global values
 	if strGameState == "Looking" and not bolKeyPressed then
+		-- do nothing
+	elseif strGameState == "CreditsBox" then
 		-- do nothing
 	else
 		MoveAllPlayers(dt)		
@@ -2495,6 +2611,8 @@ function love.update(dt)
 					
 		elseif (strGameState == "Looking" and not bolKeyPressed) or (strGameState == "Running" and intBallCarrier == 1 and not bolKeyPressed)  then	--! might take out "running later on"
 			-- don't update world
+		elseif (strGameState == "CreditsBox") then
+			-- don't update world
 		else
 			-- update world and check for collisions
 			world:update(dt) --this puts the world into motion
@@ -2521,7 +2639,7 @@ function love.draw()
 	-- draw player stats
 	if strGameState == "FormingUp" or strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
 		for i = 1,11 do
-			DrawPlayerStats (i,i)
+			--! DrawPlayerStats (i,i)
 		end
 	end	
 
@@ -2551,28 +2669,6 @@ function love.draw()
 
 	end
 	
-	-- draw QB target only if QB is looking or QB is running
-	--[[
-	if strGameState == "Looking" or (strGameState == "Running" and intBallCarrier == 1)then
-		-- draw QB target 
-		love.graphics.setColor(1, 0, 0,0.75) --set the drawing color
-		love.graphics.circle("line", objects.ball[1].targetcoordX, objects.ball[1].targetcoordY, objects.ball[1].shape:getRadius())	
-	end
-	]]--
-	
-	-- draw centre target for debugging purposes
-	--[[
-	if strGameState == "Looking" then
-		-- draw QB target 
-		love.graphics.setColor(1, 0, 0,0.75) --set the drawing color
-		for j = 7, 11 do
-			if objects.ball[j].fallendown == false then
-				love.graphics.circle("line", objects.ball[j].targetcoordX, objects.ball[j].targetcoordY, objects.ball[j].shape:getRadius())
-			end
-		end
-	end
-	]]--
-	
 	-- draw routes
 	if strGameState == "FormingUp" then
 		DrawRoutes()
@@ -2584,16 +2680,11 @@ function love.draw()
 	
 	end
 	
-	if bolEndGame then
-		button.draw()	--Draw all buttons
-		-- draw text on buttons
-		love.graphics.setColor(0, 1, 0,1)
-		love.graphics.print ("Reset", SclFactor(intRightLineX + 7),SclFactor(intBottomPostY - 8))
-	end
 
-	camera:detach()	
+	camera:detach()
+	Slab.Draw()	
 
-	DrawScores()	
+	--DrawScores()	
 end
 
 
