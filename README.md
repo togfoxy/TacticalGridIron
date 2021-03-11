@@ -30,13 +30,13 @@ Instructions
 
 Wait for the players to line up on the line-of-scrimmage.
 
-When you here the Quarterback shout "GO".
+When you hear the Quarterback shout "GO".
 
 Use the NUMPAD keys (+ NUM5) or WADX (+ S) keys or arrow keys (+ SPACE) to move the Quarterback around the field.
 
 Use the mouse to click anywhere on the field to throw the ball.
 
-Use NUMPAD-5 or S key to advance time.
+Use NUMPAD-5 or S key or SPACE BAR to advance time.
 
 You can only control the Quarterback. The rest of the players are bots.
 
@@ -44,23 +44,23 @@ You can only control the Quarterback. The rest of the players are bots.
 Tips
 ====
 
-The red circle shows where your Quarterback will run to. Use the NUMPAD or WADX keys or arrow keys to move to a new location.
+When the ball is snapped, side step left or right and allow your running back (RB) room to charge forward.
+
+Use the NUMPAD or WADX keys or arrow keys to move around and avoid opposing players.
+
+Keep your Quarterback away from the opposing team.
 
 When you click the field with the mouse, a blue circle will show where you clicked. The Quarterback will instantly throw the ball.
 
 Throw the ball to your own team - but find someone that is open and can catch the ball safely.
 
-If the ball lands too close to the opposing team then the ball will be "knocked down" by that team.
-
 Quarterbacks have throwing accuracy. Factor this into your ball placement.
+
+If the ball lands too close to the opposing team then the ball will be "knocked down" by that team.
 
 Throw distance affects accuracy. Short throws will be more accurate than long bombs.
 
 Some players are good at catching and others are not.
-
-Keep your Quarterback away from the opposing team.
-
-When the ball is snapped, side step left or right and allow your running back (RB) room to charge forward.
 
 Red dots mean that player has been tackled and is on the ground (inactive). They won't move or contribute further to this play.
 
