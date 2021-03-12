@@ -1,6 +1,7 @@
 --require "sstrict.sstrict"
+--https://github.com/coding-jackalope/Slab
 
-gameversion = "v0.13"
+gameversion = "v0.14"
 
 local Slab = require 'Slab'
 
@@ -116,7 +117,7 @@ function InstantiatePlayers()
 		objects.ball[i].fixture:setUserData((i))
 		
 		objects.ball[i].fallendown = false
-		objects.ball[i].balance = 5	-- this is a percentage eg 5% chance of falling down
+		objects.ball[i].balance = love.math.random(94,96)	-- this is a percentage eg 95% chance of NOT falling down
 		objects.ball[i].currentaction = "forming"
 		objects.ball[i].catchskill = love.math.random(70,80)				-- % chance of catching ball
 		
@@ -132,59 +133,59 @@ function CustomisePlayers()
 			objects.ball[intCounter].positionletters = "QB"
 			objects.ball[intCounter].body:setMass(love.math.random(91,110))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 14.8					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(13.3,14.8)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(133,148)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1495							-- maximum force (how much force to apply to make them move)
-			objects.ball[intCounter].throwaccuracy = love.math.random(0,10)	-- this distance ball lands from intended target
+			objects.ball[intCounter].throwaccuracy = love.math.random(90,100)	-- this distance ball lands from intended target
 		elseif intCounter == 2 or intCounter == 3 or intCounter == 4 then
 			objects.ball[intCounter].positionletters = "WR"
 			objects.ball[intCounter].body:setMass(love.math.random(80,100))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.3					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(14.8,16.3)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(148,163)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1467							-- maximum force (how much force to apply to make them move)
 			objects.ball[intCounter].catchskill = love.math.random(80,90)			-- % chance of catching ball
 			-- if catchskill is changed here then need to update coloured boxes
-			
 		elseif intCounter == 5 then
 			objects.ball[intCounter].positionletters = "RB"
 			objects.ball[intCounter].body:setMass(love.math.random(86,106))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.3					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(14.8,16.3)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(148,163)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1565							-- maximum force (how much force to apply to make them move)
+			objects.ball[intCounter].balance = love.math.random(95,97)	-- this is a percentage eg 95% chance of NOT falling down
 		elseif intCounter == 6 then
 			objects.ball[intCounter].positionletters = "TE"
 			objects.ball[intCounter].body:setMass(love.math.random(104,124))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 15.4					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(15.9,15.4)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(149,154)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1756							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 7 then
 			objects.ball[intCounter].positionletters = "C"
 			objects.ball[intCounter].body:setMass(love.math.random(131,151))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 13.8					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(12.3,13.8)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(123,138)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1946							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 8 then
 			objects.ball[intCounter].positionletters = "LG"					-- left guard offense
 			objects.ball[intCounter].body:setMass(love.math.random(131,151))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 13.6					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(12.1,13.6)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(121,136)/100	-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1918							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 9 then
 			objects.ball[intCounter].positionletters = "RG"					-- right guard offense
 			objects.ball[intCounter].body:setMass(love.math.random(131,151))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 13.6					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(12.1,13.6)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(121,136)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1918							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 10 then
 			objects.ball[intCounter].positionletters = "LT"					-- left tackle offense
 			objects.ball[intCounter].body:setMass(love.math.random(131,151))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 13.7					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(12.2,13.7)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(122,137)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1932							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 11 then
 			objects.ball[intCounter].positionletters = "RT"					-- left tackle offense
 			objects.ball[intCounter].body:setMass(love.math.random(131,151))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 13.7					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(12.2,13.7)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(122,137)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1932							-- maximum force (how much force to apply to make them move)
 			
 		-- opposing team
@@ -193,49 +194,49 @@ function CustomisePlayers()
 			objects.ball[intCounter].positionletters = "DT"
 			objects.ball[intCounter].body:setMass(love.math.random(129,149))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 14.5					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(13.0,14.5)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(130,145)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 2016							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 14 then
 			objects.ball[intCounter].positionletters = "LE"
 			objects.ball[intCounter].body:setMass(love.math.random(116,136))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 15.2					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(13.7,15.2)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(137,152)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1915							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 15 then
 			objects.ball[intCounter].positionletters = "RE"
 			objects.ball[intCounter].body:setMass(love.math.random(116,136))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 15.2					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(13.7,15.2)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(137,152)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1915							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 16 then
 			objects.ball[intCounter].positionletters = "ILB"
 			objects.ball[intCounter].body:setMass(love.math.random(100,120))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 15.6					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(14.1,15.6)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(141,156)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1716							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 17 or intCounter == 18 then
 			objects.ball[intCounter].positionletters = "OLB"
 			objects.ball[intCounter].body:setMass(love.math.random(100,120))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 15.7					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(14.2,15.7)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(142,157)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1727							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 19 or intCounter == 20 then
 			objects.ball[intCounter].positionletters = "CB"
 			objects.ball[intCounter].body:setMass(love.math.random(80,100))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.3					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(14.8,16.3)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(148,163)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1467							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 21 then
 			objects.ball[intCounter].positionletters = "S"
 			objects.ball[intCounter].body:setMass(love.math.random(80,100))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.1					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(14.6,16.1)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(146,161)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1449	
 		elseif intCounter == 22 then
 			objects.ball[intCounter].positionletters = "S"
 			objects.ball[intCounter].body:setMass(love.math.random(80,100))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.1					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(14.6,16.1)		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(146,161)/100		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1449	
 		end
 	end
@@ -338,40 +339,8 @@ function DrawStadium()
 	love.graphics.line(SclFactor(15),SclFactor(intFirstDownMarker),SclFactor(intRightLineX), SclFactor(intFirstDownMarker))	
 	love.graphics.setLineWidth(1)	-- return width back to default	
 
-	
-
-	--DrawScores()
-	
-	-- draw instructions
-	--love.graphics.setColor(1, 1, 1,1)	
-	-- love.graphics.draw(imgInstructions, SclFactor(intRightLineX + 100),SclFactor(intTopPostY))	
-	--love.graphics.draw(imgInstructions, (intRightLineX + 350),(intTopPostY + 300), _, 0.5,0.5)	
 end
 
-function DrawScores()
-	-- draw the background box
-	local intBoxX = SclFactor(0)
-	local intBoxY = SclFactor(0)
-	local intScreenwidth,intscreenheight, _ = love.window.getMode()
-	love.graphics.setColor(0.3, 0.3, 0.3)
-	love.graphics.rectangle("fill", intBoxX,intBoxY,intScreenwidth, SclFactor(10)) -- x,y,width,height. Width is left/right. Height is top/down
-	
-
-	-- draw score
-	local intScoreX = SclFactor(17)
-	local intScoreY = SclFactor(2)
-	local strText = "Downs: " .. score.downs .. " down and " .. score.yardstogo .. " yards to go. Plays: " .. score.plays
-	love.graphics.setColor(1, 1, 1)
-	love.graphics.print (strText,intScoreX,intScoreY)
-	
-	-- draw messagebox
-	local intMsgX = SclFactor(25)
-	local intMsgY = SclFactor(5)
-	love.graphics.setColor(1, 1, 1)
-	love.graphics.print (strMessageBox,intMsgX,intMsgY)		
-	
-end
-	
 function DrawAllPlayers()
 	-- do two passes - one for the fallen, then repeat for the non-fallen
 
@@ -527,6 +496,8 @@ function DrawSidebar()
 	Slab.Text("Num of plays:")
 	Slab.SameLine()
 	Slab.Text(score.plays)
+	
+	newDrawPlayerStats()
 
 	-- draw the RESET button
 	if bolEndGame then
@@ -539,6 +510,7 @@ function DrawSidebar()
 end
 
 function DrawMessageBox()
+	-- draw the SLAB messagebox to display messages
 	local msgboxwidth = 400
 	local msgboxheight = 25
 	-- centre box on screen
@@ -551,6 +523,7 @@ function DrawMessageBox()
 end
 
 function DrawCreditsButton()
+	-- draws SLAB button
 	local sidebarwidth = 120
 	
 	local x = love.graphics.getWidth() - sidebarwidth
@@ -570,6 +543,7 @@ function DrawCreditsButton()
 end
 
 function DrawCreditsBox()
+	-- draws SLAB window
 	-- centre box on screen
 	local x = love.graphics.getWidth()/2 - 150
 	local y = love.graphics.getHeight()/2 - 250	-- arbitrary value
@@ -606,6 +580,132 @@ function DrawCreditsBox()
 	Slab.EndLayout()
 	Slab.EndWindow()
 end
+
+function newDrawPlayerStats()
+	-- use SLAB to draw the player stats
+	local RGBValues = {}
+	RGBValues[0] = {255,0,0}
+	RGBValues[1] = {255,51,0}
+	RGBValues[2] = {255,102,0}
+	RGBValues[3] = {255,153,0}
+	RGBValues[4] = {255,205,0}
+	RGBValues[5] = {255,255,0}
+	RGBValues[6] = {205,255,0}
+	RGBValues[7] = {153,255,0}
+	RGBValues[8] = {102,255,0}
+	RGBValues[9] = {51,255,0}
+	RGBValues[10] ={0,255,0}
+	
+	
+	for i = 1, 11 do
+		Slab.Text(objects.ball[i].positionletters)
+		
+		if i == 1 then
+			local skillcolourcode = objects.ball[i].throwaccuracy - 90
+			Slab.SameLine()
+			Slab.Text("THROW",{Color = {RGBValues[skillcolourcode][1],RGBValues[skillcolourcode][2],RGBValues[skillcolourcode][3]}})
+		end
+
+		if i == 2 or i == 3 or i== 4 then	-- WR
+			local skillcolourcode = objects.ball[i].catchskill - 80
+			Slab.SameLine()
+			Slab.Text("CATCH",{Color = {RGBValues[skillcolourcode][1],RGBValues[skillcolourcode][2],RGBValues[skillcolourcode][3]}})			
+		end		
+		
+		-- 95 -> 97
+		if i == 5 then -- RB
+			local rbbalance = objects.ball[i].balance
+			
+			if rbbalance == 95 then
+				skillcolourcode = 0
+			elseif rbbalance == 96 then
+				skillcolourcode = 5
+			else
+				skillcolourcode = 10
+			end
+		
+			Slab.SameLine()
+			Slab.Text("BALANCE",{Color = {RGBValues[skillcolourcode][1],RGBValues[skillcolourcode][2],RGBValues[skillcolourcode][3]}})					
+		end
+	
+		-- 14.9 -> 15.4
+		if i == 6 then -- TE
+			local skillcolourcode = (objects.ball[i].maxV - 14.9) * 20
+			print(objects.ball[i].maxV,skillcolourcode)
+			Slab.SameLine()
+			Slab.Text("SPEED",{Color = {RGBValues[skillcolourcode][1],RGBValues[skillcolourcode][2],RGBValues[skillcolourcode][3]}})		
+		
+		
+		end
+	
+	
+
+	
+	end
+end
+
+function DrawPlayerStats(i, intPanelNum)
+	-- Draw a player panel for player #1 in panel position intPanelNum
+
+	local intPanelHeight = SclFactor(4)
+	local intPanelWidth = SclFactor(5)
+	local intPanelX = SclFactor(intRightLineX + 5)
+	local intPanelY = SclFactor((intTopPostY - (intPanelHeight / fltScaleFactor)) + (intPanelHeight / fltScaleFactor) * intPanelNum)	-- top post + panel height * panel number. The - bit is to get alignment with top post
+		
+	-- ****************************
+	-- printing order is important!
+	-- ****************************
+
+-- 1st column	
+	-- draw background
+
+
+-- 2nd column
+	-- intPanelWidth = SclFactor(10)
+	intPanelX = intPanelX + intPanelWidth
+	
+	--love.graphics.setColor(128/255, 128/255, 128/255)
+	--love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
+
+	-- draw border
+	love.graphics.setColor(96/255, 96/255, 96/255)
+	love.graphics.rectangle("line",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
+	
+	-- draw text
+	if i == 1 then	-- QB
+	
+		-- this works on 0 -> 10 with 0 being best
+		local myValue = objects.ball[i].throwaccuracy
+		intRedValue = myValue * 51
+		if intRedValue > 255 then intRedValue = 255 end
+		intGreenValue = (10 - myValue) * 51
+
+		--print(intRedValue,intGreenValue)
+		love.graphics.setColor(intRedValue/255, intGreenValue/255, 0)
+		love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)
+
+		love.graphics.setColor(0, 0, 0)
+		love.graphics.print ("THR", intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))
+	end
+	if i == 2 or i == 3 or i== 4 then	-- WR
+		local myValue = objects.ball[i].catchskill
+		myValue = myValue - 80
+	
+		intGreenValue = myValue * 51
+		intRedValue = (10 - myValue) * 51
+		
+		love.graphics.setColor(intRedValue/255, intGreenValue/255, 0)
+		love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
+		
+		love.graphics.setColor(0, 0, 0)
+		love.graphics.print ("CTH", intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))
+	
+	end
+
+	
+	
+end
+
 
 function SetPlayerTargets()
 
@@ -2223,77 +2323,6 @@ function SetCameraView()
 	AdjustCameraZoom(camera)
 end
 
-function DrawPlayerStats(i, intPanelNum)
-	-- Draw a player panel for player #1 in panel position intPanelNum
-
-	local intPanelHeight = SclFactor(4)
-	local intPanelWidth = SclFactor(5)
-	local intPanelX = SclFactor(intRightLineX + 5)
-	local intPanelY = SclFactor((intTopPostY - (intPanelHeight / fltScaleFactor)) + (intPanelHeight / fltScaleFactor) * intPanelNum)	-- top post + panel height * panel number. The - bit is to get alignment with top post
-		
-	-- ****************************
-	-- printing order is important!
-	-- ****************************
-
--- 1st column	
-	-- draw background
-	love.graphics.setColor(128/255, 128/255, 128/255)
-	love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)
-	
-	-- draw border
-	love.graphics.setColor(96/255, 96/255, 96/255)
-	love.graphics.rectangle("line",intPanelX,intPanelY,intPanelWidth, intPanelHeight)
-		
-	-- draw the position letters
-	love.graphics.setColor(1, 1, 1)
-	love.graphics.print (objects.ball[i].positionletters,intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))	
-
--- 2nd column
-	-- intPanelWidth = SclFactor(10)
-	intPanelX = intPanelX + intPanelWidth
-	
-	--love.graphics.setColor(128/255, 128/255, 128/255)
-	--love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
-
-	-- draw border
-	love.graphics.setColor(96/255, 96/255, 96/255)
-	love.graphics.rectangle("line",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
-	
-	-- draw text
-	if i == 1 then	-- QB
-	
-		-- this works on 0 -> 10 with 0 being best
-		local myValue = objects.ball[i].throwaccuracy
-		intRedValue = myValue * 51
-		if intRedValue > 255 then intRedValue = 255 end
-		intGreenValue = (10 - myValue) * 51
-
-		--print(intRedValue,intGreenValue)
-		love.graphics.setColor(intRedValue/255, intGreenValue/255, 0)
-		love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)
-
-		love.graphics.setColor(0, 0, 0)
-		love.graphics.print ("THR", intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))
-	end
-	if i == 2 or i == 3 or i== 4 then	-- WR
-		local myValue = objects.ball[i].catchskill
-		myValue = myValue - 80
-	
-		intGreenValue = myValue * 51
-		intRedValue = (10 - myValue) * 51
-		
-		love.graphics.setColor(intRedValue/255, intGreenValue/255, 0)
-		love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
-		
-		love.graphics.setColor(0, 0, 0)
-		love.graphics.print ("CTH", intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))
-	
-	end
-
-	
-	
-end
-
 function love.mousereleased(x, y, button)
 
 	-- this overrides the screen x/y with the world x/y noting that the camera messes things up.
@@ -2321,25 +2350,25 @@ function love.mousereleased(x, y, button)
 						
 						-- determine random ball accuracy
 						-- this is a random vector and random direction
-						local intplayerinaccuracy = objects.ball[1].throwaccuracy 
-						-- print("Throw inaccuracy = " .. intplayerinaccuracy .. "%")
+						local intplayeraccuracy = objects.ball[1].throwaccuracy 
+						-- print("Throw accuracy = " .. intplayeraccuracy .. "%")
 						
 						-- add some inaccuracy based on distance between thrower and intended click
 						-- if throw > 15 then add some randomness	-- 20 is arbitrary value
 						local mydistance = getDistance(objects.ball[1].body:getX(), objects.ball[1].body:getY(), x, y)
 						if mydistance > 20 then
-							-- take the distance over 20 yards, divide by 15, then add that to inaccuracy
+							-- take the distance over 20 yards, divide by 15, then subtract that from accuracy
 							myinacc = round((love.math.random(0, (mydistance - 20) / 15)),0)
 							
-							intplayerinaccuracy = intplayerinaccuracy + myinacc
+							intplayeraccuracy = intplayeraccuracy - myinacc
 							--print("Adding distance factor of " .. myinacc)
 							--print("Inacc is now " .. intplayerinaccuracy)
 							--print("=========")
 						end
 						
-						
-						local randomXvector = love.math.random(intplayerinaccuracy * -1, intplayerinaccuracy)
-						local randomYvector = love.math.random(intplayerinaccuracy * -1, intplayerinaccuracy)
+						local finalinaccuracy = 100 - intplayeraccuracy
+						local randomXvector = love.math.random(finalinaccuracy * -1, finalinaccuracy)
+						local randomYvector = love.math.random(finalinaccuracy * -1, finalinaccuracy)
 						football.targetx = football.targetx + SclFactor(randomXvector)
 						football.targety = football.targety + SclFactor(randomYvector)
 						
@@ -2365,31 +2394,31 @@ function beginContact(a, b, coll)
 			if objects.ball[aindex].fallendown or objects.ball[bindex].fallendown then	-- if either player has fallen down then do nothing
 				-- do nothing
 			else
-				local chanceoffalling = objects.ball[aindex].balance
-				if intBallCarrier == aindex then chanceoffalling = 85 end -- huge penalty if you hold the ball
+				local chanceofnotfalling = objects.ball[aindex].balance
+				if intBallCarrier == aindex then chanceofnotfalling = 15 end -- huge penalty if you hold the ball
 				
 				-- RB's have a reduced chance of falling
 				if objects.ball[aindex].positionletters == "RB" then 
-					chanceoffalling = chanceoffalling / 2
+					chanceofnotfalling = chanceofnotfalling * 2
 				end
 				
 				-- check if player A falls down
-				if love.math.random(1,100) < chanceoffalling then
+				if love.math.random(1,100) > chanceofnotfalling then
 					-- oops - fell down!
 					objects.ball[aindex].fallendown = true
 					SetPlayersSensors(false, aindex)
 				end
 				
 				-- check if player B falls down
-				local chanceoffalling = objects.ball[bindex].balance
-				if intBallCarrier == bindex then chanceoffalling = 85 end -- huge penalty if you hold the ball
+				local chanceofnotfalling = objects.ball[bindex].balance
+				if intBallCarrier == bindex then chanceofnotfalling = 15 end -- huge penalty if you hold the ball
 				
 				-- RB's have a reduced chance of falling
 				if objects.ball[aindex].positionletters == "RB" then
-					chanceoffalling = chanceoffalling / 2
+					chanceofnotfalling = chanceofnotfalling * 2
 				end
 				
-				if love.math.random(1,100) < chanceoffalling then
+				if love.math.random(1,100) > chanceofnotfalling then
 					-- oops - fell down!
 					objects.ball[bindex].fallendown = true
 					SetPlayersSensors(false, bindex)
@@ -2684,7 +2713,6 @@ function love.draw()
 	camera:detach()
 	Slab.Draw()	
 
-	--DrawScores()	
 end
 
 
