@@ -1,9 +1,11 @@
 --require "sstrict.sstrict"
 --https://github.com/coding-jackalope/Slab
+--https://hump.readthedocs.io/en/latest/
 
 gameversion = "v0.14"
 
 local Slab = require 'Slab'
+intSideBarWidth = 120
 
 Camera = require "hump.camera"
 fltCameraSmoothRate = 0.025	-- how fast does the camera zoom
@@ -79,7 +81,9 @@ soundwin = love.audio.newSource("29DarkFantasyStudioTreasure.wav", "static")
 soundlost = love.audio.newSource("524661aceinetlostphase3.wav", "static")
 
 soundcheer:setVolume(0.3)		-- mp3 file is too loud. Will tweak it here.
-soundwin:setVolume(0.2)
+soundwin:setVolume(0.1)
+soundwhistle:setVolume(0.5)
+
 
 -- load images
 imgPlayerImages = {}
@@ -89,6 +93,7 @@ mudimages = {}
 
 footballimage = love.graphics.newImage("football.png")
 imgmudimage[1] = love.graphics.newImage("mudv1.png")
+imgStadium = love.graphics.newImage("tempstadium.jpg")
 
 imgPlayerImages[1] = love.graphics.newImage("blueplayer1.png")
 
@@ -133,14 +138,14 @@ function CustomisePlayers()
 			objects.ball[intCounter].positionletters = "QB"
 			objects.ball[intCounter].body:setMass(love.math.random(91,110))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 14.8					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(133,148)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(133,148)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1495							-- maximum force (how much force to apply to make them move)
 			objects.ball[intCounter].throwaccuracy = love.math.random(90,100)	-- this distance ball lands from intended target
 		elseif intCounter == 2 or intCounter == 3 or intCounter == 4 then
 			objects.ball[intCounter].positionletters = "WR"
 			objects.ball[intCounter].body:setMass(love.math.random(80,100))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.3					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(148,163)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(148,163)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1467							-- maximum force (how much force to apply to make them move)
 			objects.ball[intCounter].catchskill = love.math.random(80,90)			-- % chance of catching ball
 			-- if catchskill is changed here then need to update coloured boxes
@@ -148,44 +153,45 @@ function CustomisePlayers()
 			objects.ball[intCounter].positionletters = "RB"
 			objects.ball[intCounter].body:setMass(love.math.random(86,106))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.3					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(148,163)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(148,163)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1565							-- maximum force (how much force to apply to make them move)
-			objects.ball[intCounter].balance = love.math.random(95,97)	-- this is a percentage eg 95% chance of NOT falling down
+			objects.ball[intCounter].balance = love.math.random(95,97)		-- this is a percentage eg 95% chance of NOT falling down
+			objects.ball[intCounter].catchskill = love.math.random(85,95)	-- RB's get handoffs and not catches so make this high
 		elseif intCounter == 6 then
 			objects.ball[intCounter].positionletters = "TE"
 			objects.ball[intCounter].body:setMass(love.math.random(104,124))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 15.4					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(149,154)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(149,154)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1756							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 7 then
 			objects.ball[intCounter].positionletters = "C"
 			objects.ball[intCounter].body:setMass(love.math.random(131,151))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 13.8					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(123,138)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(123,138)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1946							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 8 then
 			objects.ball[intCounter].positionletters = "LG"					-- left guard offense
 			objects.ball[intCounter].body:setMass(love.math.random(131,151))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 13.6					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(121,136)/100	-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(121,136)/10	-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1918							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 9 then
 			objects.ball[intCounter].positionletters = "RG"					-- right guard offense
 			objects.ball[intCounter].body:setMass(love.math.random(131,151))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 13.6					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(121,136)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(121,136)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1918							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 10 then
 			objects.ball[intCounter].positionletters = "LT"					-- left tackle offense
 			objects.ball[intCounter].body:setMass(love.math.random(131,151))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 13.7					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(122,137)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(122,137)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1932							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 11 then
 			objects.ball[intCounter].positionletters = "RT"					-- left tackle offense
 			objects.ball[intCounter].body:setMass(love.math.random(131,151))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 13.7					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(122,137)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(122,137)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1932							-- maximum force (how much force to apply to make them move)
 			
 		-- opposing team
@@ -194,51 +200,52 @@ function CustomisePlayers()
 			objects.ball[intCounter].positionletters = "DT"
 			objects.ball[intCounter].body:setMass(love.math.random(129,149))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 14.5					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(130,145)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(130,145)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 2016							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 14 then
 			objects.ball[intCounter].positionletters = "LE"
 			objects.ball[intCounter].body:setMass(love.math.random(116,136))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 15.2					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(137,152)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(137,152)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1915							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 15 then
 			objects.ball[intCounter].positionletters = "RE"
 			objects.ball[intCounter].body:setMass(love.math.random(116,136))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 15.2					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(137,152)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(137,152)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1915							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 16 then
 			objects.ball[intCounter].positionletters = "ILB"
 			objects.ball[intCounter].body:setMass(love.math.random(100,120))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 15.6					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(141,156)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(141,156)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1716							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 17 or intCounter == 18 then
 			objects.ball[intCounter].positionletters = "OLB"
 			objects.ball[intCounter].body:setMass(love.math.random(100,120))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 15.7					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(142,157)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(142,157)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1727							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 19 or intCounter == 20 then
 			objects.ball[intCounter].positionletters = "CB"
 			objects.ball[intCounter].body:setMass(love.math.random(80,100))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.3					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(148,163)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(148,163)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1467							-- maximum force (how much force to apply to make them move)
 		elseif intCounter == 21 then
 			objects.ball[intCounter].positionletters = "S"
 			objects.ball[intCounter].body:setMass(love.math.random(80,100))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.1					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(146,161)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(146,161)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1449	
 		elseif intCounter == 22 then
 			objects.ball[intCounter].positionletters = "S"
 			objects.ball[intCounter].body:setMass(love.math.random(80,100))	-- kilograms
 			objects.ball[intCounter].maxpossibleV = 16.1					-- max velocity possible for this position
-			objects.ball[intCounter].maxV = love.math.random(146,161)/100		-- max velocity possible for this player (this persons limitations)
+			objects.ball[intCounter].maxV = love.math.random(146,161)/10		-- max velocity possible for this player (this persons limitations)
 			objects.ball[intCounter].maxF = 1449	
 		end
+
 	end
 		
 end
@@ -318,8 +325,16 @@ function DrawStadium()
 	-- draw mud
 	love.graphics.setColor(1, 1, 1,0.6)
 	for i = 1, #mudimages do
-		love.graphics.draw(imgmudimage[1],mudimages[i][1],mudimages[i][2],0, 0.50,0.50, 20,20)
+		-- image, x,y,rotation (rads),scale,scale,offset,offset
+		love.graphics.draw(imgmudimage[1],mudimages[i][1],mudimages[i][2],mudimages[i][3], 0.50,0.50, 20,20)
 	end
+	
+	-- draw stadium
+	love.graphics.setColor(1, 1, 1,1)
+	love.graphics.draw(imgStadium,SclFactor(intLeftLineX - 18) ,SclFactor(intTopGoalY + 10),0, 0.25,0.25) -- image, x,y,r,sx,sy,origin x,oy
+	love.graphics.draw(imgStadium,SclFactor(intLeftLineX - 18) ,SclFactor(intTopGoalY + 28),0, 0.25,0.25)
+	love.graphics.draw(imgStadium,SclFactor(intLeftLineX - 18) ,SclFactor(intTopGoalY + 46),0, 0.25,0.25)
+	love.graphics.draw(imgStadium,SclFactor(intLeftLineX - 18) ,SclFactor(intTopGoalY + 64),0, 0.25,0.25)
 	
 	--draw scrimmage
 	local intRed = 93
@@ -477,11 +492,11 @@ function DrawDottedLine(x1,y1,x2,y2)
 end
 
 function DrawSidebar()
-	local sidebarwidth = 120
 	
-	local x = love.graphics.getWidth() - sidebarwidth
+	
+	local x = love.graphics.getWidth() - intSideBarWidth
 	local y = 0
-	local w = sidebarwidth -- width
+	local w = intSideBarWidth -- width
 	local h = love.graphics.getHeight()
 	
 	Slab.BeginWindow('sidebar',{AutoSizeWindow=false,NoOutline=true,X=x,Y=y,W=w,H=h})
@@ -511,25 +526,41 @@ end
 
 function DrawMessageBox()
 	-- draw the SLAB messagebox to display messages
-	local msgboxwidth = 400
+	
+	local intMsgLength = string.len(strMessageBox)
+	local msgboxwidth = 1
 	local msgboxheight = 25
+	local fltTextX = msgboxwidth/2 - intMsgLength/2	-- Centre the text in the box. This is the text X value
+	
 	-- centre box on screen
-	local x = love.graphics.getWidth()/2 - msgboxwidth/2
+	local x = love.graphics.getWidth()/2 - intSideBarWidth - msgboxwidth/2 -- half the screen minus half the width of the box
 	local y = 20	-- arbitrary value
 	
-	Slab.BeginWindow('msgbox',{AutoSizeWindow=false,NoOutline=false,X=x,Y=y,W=msgboxwidth,H=msgboxheight})
+	fltTextX = msgboxwidth/2 - intMsgLength/2	-- Centre the text in the box. This is the text X value
+	
+	Slab.BeginWindow('msgbox',
+		{
+		X=x,Y=y,
+		H=msgboxheight,
+		W=msgboxwidth,
+		AutoSizeWindow=false,
+		AllowResize=false,
+		AutoSizeWindowW=false,
+		AllowFocus=false,
+		NoOutline=false
+		})
 	Slab.Textf(strMessageBox,{Align="center"})
 	Slab.EndWindow()
 end
 
 function DrawCreditsButton()
 	-- draws SLAB button
-	local sidebarwidth = 120
+	local intSideBarWidth = 120
 	
-	local x = love.graphics.getWidth() - sidebarwidth
+	local x = love.graphics.getWidth() - intSideBarWidth
 	local h = love.graphics.getHeight()
 	local y = h - 100	-- arbitrary
-	local w = sidebarwidth -- width
+	local w = intSideBarWidth -- width
 
 	
 	Slab.BeginWindow('aboutbox',{AutoSizeWindow=false,NoOutline=true,X=x,Y=y,W=w,H=h})
@@ -630,15 +661,20 @@ function newDrawPlayerStats()
 	
 		-- 14.9 -> 15.4
 		if i == 6 then -- TE
-			local skillcolourcode = (objects.ball[i].maxV - 14.9) * 20
-			print(objects.ball[i].maxV,skillcolourcode)
+			local skillcolourcode = round((objects.ball[i].maxV - 14.9) * 20,0)
 			Slab.SameLine()
 			Slab.Text("SPEED",{Color = {RGBValues[skillcolourcode][1],RGBValues[skillcolourcode][2],RGBValues[skillcolourcode][3]}})		
-		
-		
 		end
 	
-	
+		--12.3,13.8
+		if i > 6 then -- centre
+			--print(objects.ball[i].maxV)
+			--print(objects.ball[i].body:getMass())
+			-- this is velocity * mass and then scaled to a value between 0 -> 10 inclusive
+			local skillcolourcode = round(((objects.ball[i].maxV * objects.ball[i].body:getMass())-1585)*0.020052)
+			Slab.SameLine()
+			Slab.Text("STRENGTH",{Color = {RGBValues[skillcolourcode][1],RGBValues[skillcolourcode][2],RGBValues[skillcolourcode][3]}})		
+		end
 
 	
 	end
@@ -706,6 +742,49 @@ function DrawPlayerStats(i, intPanelNum)
 	
 end
 
+function DrawMousePointer()
+
+	local intMouseX, intMouseY = camera:mousePosition()
+	
+	if intMouseX > SclFactor(intLeftLineX) and intMouseX < SclFactor(intRightLineX) and
+		intMouseY > SclFactor(intTopPostY) and intMouseY < SclFactor(intBottomPostY) then
+	
+		-- determine random ball accuracy
+		-- this is a random vector and random direction
+		local intplayeraccuracy = objects.ball[1].throwaccuracy
+
+		--print("QB throw accuracy is " .. intplayeraccuracy)
+
+		
+		-- add some inaccuracy based on distance between thrower and intended click
+		-- if throw > 15 then add some randomness	-- 20 is arbitrary value
+		local mydistance = getDistance(objects.ball[1].body:getX(), objects.ball[1].body:getY(), intMouseX, intMouseY)
+		mydistance = mydistance / fltScaleFactor
+		
+		--print("Distance to pointer is " .. mydistance)
+		
+		if mydistance > 20 then
+			-- take the distance over 20 yards, divide by 15, then subtract that from accuracy
+			local myinacc = round((mydistance / 15))
+			
+			--print("Adding a distance metric of ".. myinacc)
+			intplayeraccuracy = intplayeraccuracy - myinacc
+		end
+		
+		--print("Accuracy is now " .. intplayeraccuracy)
+		
+		local fltPointerRadius = 100 - intplayeraccuracy
+		--fltPointerRadius = fltPointerRadius / 2	-- radius
+		if fltPointerRadius < 1 then fltPointerRadius = 1 end
+
+		--print("Pointer radius is " .. fltPointerRadius )
+		--print("*****************************************************")
+	
+		love.graphics.setColor(1, 1, 1,1) --set the drawing color
+		love.graphics.circle("line", intMouseX, intMouseY, SclFactor(fltPointerRadius))			
+		
+	end
+end
 
 function SetPlayerTargets()
 
@@ -1049,13 +1128,38 @@ function SetRouteStacks()
 	table.insert(playerroutes[4],coord[1])
 	table.insert(playerroutes[4],coord[2])	
 	
+	CheckAllRoutes()
 
+end
+
+function CheckAllRoutes()
+	-- make sure all routes fall inside the playing field
 	
-	--print (playerroutes[2][1][1])	-- player 2 \ coordinate pair 1 \ X value
-	--print (playerroutes[2][1][2]) -- player 2 \ coordinate pair 1 \ Y value
-	--print()
-	--print (playerroutes[2][2][1]) -- player 2 \ coordinate pair 2 \ X value
-	--print (playerroutes[2][2][2]) -- player 2 \ coordinate pair 2 \ Y value
+	
+	for i = 2, 4 do	-- for each player	--! might need to make this for all players
+		for j = 1,#playerroutes[i] do
+			--print(i,j,#playerroutes[i])
+			if playerroutes[i][j][1] == nil then
+				-- do nothing
+			else
+				if playerroutes[i][j][1] < intLeftLineX then	-- player i, routej, x value
+					print("alpha")
+					playerroutes[i][j][1] = intLeftLineX + 3
+				end
+				if playerroutes[i][j][1] > intRightLineX then	-- player i, routej, x value
+					print("beta")
+					playerroutes[i][j][1] = intRightLineX - 3
+				end		
+				if playerroutes[i][j][2] < intTopPostY then	-- player i, routej, y value
+					print("charlie")
+					playerroutes[i][j][2] = intTopPostY + 3
+				end
+			end
+		end
+		
+	
+	
+	end
 end
 
 function SetWRTargets()
@@ -1103,70 +1207,21 @@ function SetWRTargets()
 							x1 = objects.ball[closePlayer1].body:getX()
 							y1 = objects.ball[closePlayer1].body:getY()
 							
-							-- closePlayer2, closeDistance2 =  Determine2ndClosestEnemy(i, "", True)
-							-- x2 = objects.ball[closePlayer2].body:getX()
-							-- y2 = objects.ball[closePlayer2].body:getY()	
-							
-							-- get some imaginary bounding box
-							--  top left
-							--x3 = SclFactor(intLeftLineX)
-							--y3 = SclFactor(intScrimmageY - 15)
-							
-							--  top right
-							--x4 = SclFactor(intRightLineX)
-							--y4 = SclFactor(intScrimmageY - 15)
-							
-							-- bottom right
-							--x5 = SclFactor(intRightLineX)
-							--y5 = SclFactor(intScrimmageY + 15)
-							
-							-- bottom left
-							--x6 = SclFactor(intLeftLineX)
-							--y6 = SclFactor(intScrimmageY + 15)
-							
+						
 							Scale1 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x1, y1)	
 							-- we have closeDistance1 above. Would be more efficient to use that --!
-							
-							-- Scale2 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x2, y2)
-							--Scale3 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x3, y3)
-							--Scale4 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x4, y4)
-							--Scale5 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x5, y5)
-							--Scale6 = GetInverseSqrtDistance(objects.ball[i].body:getX(), objects.ball[i].body:getY(), x6, y6)
-							
 							
 							-- Normalise the scales
 							TotalScale = Scale1 -- + Scale3 + Scale4 + Scale5 + Scale6
 							Scale1 = Scale1/TotalScale
-							-- Scale2 = Scale2/TotalScale
-							--Scale3 = Scale3/TotalScale
-							--Scale4 = Scale4/TotalScale
-							--Scale5 = Scale5/TotalScale
-							--Scale6 = Scale6/TotalScale
 						
 							-- apply avoidance vector for closest player
 							-- scale the vector before applying it
 							X1scaled,Y1scaled = ScaleVector(x1,y1,Scale1)
-							--X2scaled,Y2scaled = ScaleVector(x2,y2,Scale2)
-							--X3scaled,Y3scaled = ScaleVector(x3,y3,Scale3)
-							--X4scaled,Y4scaled = ScaleVector(x4,y4,Scale4)
-							--X5scaled,Y5scaled = ScaleVector(x5,y5,Scale5)
-							--X6scaled,Y6scaled = ScaleVector(x6,y6,Scale6)
-							
-							
+
 							-- apply this avoidance vector to the current target
 							finalvectorX,finalvectorY = SubtractVectors(objects.ball[i].targetcoordX,objects.ball[i].targetcoordY,X1scaled,Y1scaled)
-							
-							-- apply avoidance vector for 2nd closest player
-							-- scale the vector before applying it
-							--X2scaled,Y2scaled = ScaleVector(x2,y2,Scale2)
-							--finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X2scaled,Y2scaled)
-												
-							-- apply this avoidance vector to the current target
-							-- finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X3scaled,Y3scaled)
-							-- finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X4scaled,Y4scaled)
-							-- finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X5scaled,Y5scaled)
-							-- finalvectorX,finalvectorY = SubtractVectors(finalvectorX,finalvectorY,X6scaled,Y6scaled)
-							
+						
 							-- set target to that vector
 							objects.ball[i].targetcoordX = objects.ball[i].body:getX() + finalvectorX
 							objects.ball[i].targetcoordY = objects.ball[i].body:getY() + finalvectorY
@@ -1956,56 +2011,57 @@ function ProcessKeyInput()
 		
 		-- set new targets for the QB based on his current position
 		-- important to process diagonals first
+		local intMoveAmount = 30
 		
 		if bolMoveup and bolMoveLeft then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - 35)	 
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - 35)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - intMoveAmount)	 
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - intMoveAmount)
 			-- reset these keys so they don't get processed twice
 			bolMoveUp = false
 			bolMoveLeft = false
 			--print("alpha")
 		end
 		if bolMoveup and bolMoveRight then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + 35)	 
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - 35)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + intMoveAmount)	 
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - intMoveAmount)
 			-- reset these keys so they don't get processed twice
 			bolMoveUp = false
 			bolMoveRight = false
 			--print("beta")
 		end	
 		if bolMoveDown and bolMoveRight then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + 35)	 
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + 35)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + intMoveAmount)	 
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + intMoveAmount)
 			-- reset these keys so they don't get processed twice
 			bolMoveDown = false
 			bolMoveRight = false
 			--print("charlie")
 		end				
 		if bolMoveDown and bolMoveLeft then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - 35)	 
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + 35)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - intMoveAmount)	 
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + intMoveAmount)
 			-- reset these keys so they don't get processed twice
 			bolMoveDown = false
 			bolMoveLeft = false
 			--print("delta")
 		end			
 		if bolMoveUp then
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - 35)
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() - intMoveAmount)
 			bolMoveUp = false
 			--print("echo")
 		end			
 		if bolMoveRight then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + 35)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() + intMoveAmount)
 			bolMoveRight = false
 			--print("foxtrot")
 		end	
 		if bolMoveDown then
-			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + 35)
+			objects.ball[1].targetcoordY = (objects.ball[1].body:getY() + intMoveAmount)
 			bolMoveDown = false
 			--print("golf")
 		end	
 		if bolMoveLeft then
-			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - 35)
+			objects.ball[1].targetcoordX = (objects.ball[1].body:getX() - intMoveAmount)
 			bolMoveLeft = false
 			--print("hotel")
 		end	
@@ -2356,6 +2412,7 @@ function love.mousereleased(x, y, button)
 						-- add some inaccuracy based on distance between thrower and intended click
 						-- if throw > 15 then add some randomness	-- 20 is arbitrary value
 						local mydistance = getDistance(objects.ball[1].body:getX(), objects.ball[1].body:getY(), x, y)
+						mydistance = mydistance / fltScaleFactor
 						if mydistance > 20 then
 							-- take the distance over 20 yards, divide by 15, then subtract that from accuracy
 							myinacc = round((love.math.random(0, (mydistance - 20) / 15)),0)
@@ -2475,12 +2532,13 @@ function love.update(dt)
 		DrawCreditsBox()
 	end
 
-
 	SetCameraView()
 	
 	SetPlayerTargets()
 	
 	ProcessKeyInput() -- this must be in the main loop as it sets key press global values
+	
+
 	if strGameState == "Looking" and not bolKeyPressed then
 		-- do nothing
 	elseif strGameState == "CreditsBox" then
@@ -2488,7 +2546,6 @@ function love.update(dt)
 	else
 		MoveAllPlayers(dt)		
 	end
-
 	
 	if strGameState == "Airborne" then
 		-- Update ball position i nthe air
@@ -2507,7 +2564,7 @@ function love.update(dt)
 			--print("Ball carrier is tackled.")
 			strMessageBox = "The ball carrier was tackled."
 			
-			mudpair = {objects.ball[intBallCarrier].body:getX(),objects.ball[intBallCarrier].body:getY()}
+			mudpair = {objects.ball[intBallCarrier].body:getX(),objects.ball[intBallCarrier].body:getY(), love.math.random(0,62)/10 }	--x,y,rotation (radians)
 			table.insert(mudimages,mudpair)
 		end	
 	end
@@ -2516,6 +2573,7 @@ function love.update(dt)
 	if intBallCarrier > 0 then	
 		if bolCarrierOutOfBounds() then
 			bolPlayOver = true
+			bolMoveChains = true
 			--print("Ball carrier is out of bounds.")
 			strMessageBox = "Ball is out of bounds."
 		end
@@ -2586,7 +2644,7 @@ function love.update(dt)
 		-- check for end game
 		if score.downs > 4 then
 			--print("Turnover on downs.")
-			strMessageBox = "Turnover on downs. Game over."	
+			strMessageBox = strMessageBox .. " Turnover on downs. Game over."	
 			bolEndGame = true
 			soundlost:play()
 			fltFinalCameraZoom = 1
@@ -2619,10 +2677,11 @@ function love.update(dt)
 				--print("Touchdown!")
 				soundwin:play()
 				score.plays = score.plays + 1
+				strMessageBox = "Touchdown!!! You win!"
 			end
 			bolEndGame = true
 			fltFinalCameraZoom = 1
-			strMessageBox = "Touchdown!!! You win!"
+			
 		end
 	end	
 	
@@ -2710,6 +2769,11 @@ function love.draw()
 	end
 	
 
+	if strGameState == "Looking" then
+		-- draw mouse
+		DrawMousePointer()
+	end
+	
 	camera:detach()
 	Slab.Draw()	
 
