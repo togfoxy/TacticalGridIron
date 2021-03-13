@@ -526,28 +526,23 @@ end
 
 function DrawMessageBox()
 	-- draw the SLAB messagebox to display messages
-	
-	local intMsgLength = string.len(strMessageBox)
-	local msgboxwidth = 1
-	local msgboxheight = 25
-	local fltTextX = msgboxwidth/2 - intMsgLength/2	-- Centre the text in the box. This is the text X value
-	
+
 	-- centre box on screen
-	local x = love.graphics.getWidth()/2 - intSideBarWidth - msgboxwidth/2 -- half the screen minus half the width of the box
+	local x = love.graphics.getWidth()/2 - intSideBarWidth -- half the screen minus half the width of the box
 	local y = 20	-- arbitrary value
 	
-	fltTextX = msgboxwidth/2 - intMsgLength/2	-- Centre the text in the box. This is the text X value
+
 	
 	Slab.BeginWindow('msgbox',
 		{
 		X=x,Y=y,
-		H=msgboxheight,
-		W=msgboxwidth,
-		AutoSizeWindow=false,
-		AllowResize=false,
-		AutoSizeWindowW=false,
-		AllowFocus=false,
-		NoOutline=false
+		--H=msgboxheight,
+		--W=msgboxwidth,
+		--AutoSizeWindow=false,
+		--AllowResize=false,
+		--AutoSizeWindowW=false,
+		--AllowFocus=false,
+		--NoOutline=false
 		})
 	Slab.Textf(strMessageBox,{Align="center"})
 	Slab.EndWindow()
@@ -678,68 +673,6 @@ function newDrawPlayerStats()
 
 	
 	end
-end
-
-function DrawPlayerStats(i, intPanelNum)
-	-- Draw a player panel for player #1 in panel position intPanelNum
-
-	local intPanelHeight = SclFactor(4)
-	local intPanelWidth = SclFactor(5)
-	local intPanelX = SclFactor(intRightLineX + 5)
-	local intPanelY = SclFactor((intTopPostY - (intPanelHeight / fltScaleFactor)) + (intPanelHeight / fltScaleFactor) * intPanelNum)	-- top post + panel height * panel number. The - bit is to get alignment with top post
-		
-	-- ****************************
-	-- printing order is important!
-	-- ****************************
-
--- 1st column	
-	-- draw background
-
-
--- 2nd column
-	-- intPanelWidth = SclFactor(10)
-	intPanelX = intPanelX + intPanelWidth
-	
-	--love.graphics.setColor(128/255, 128/255, 128/255)
-	--love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
-
-	-- draw border
-	love.graphics.setColor(96/255, 96/255, 96/255)
-	love.graphics.rectangle("line",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
-	
-	-- draw text
-	if i == 1 then	-- QB
-	
-		-- this works on 0 -> 10 with 0 being best
-		local myValue = objects.ball[i].throwaccuracy
-		intRedValue = myValue * 51
-		if intRedValue > 255 then intRedValue = 255 end
-		intGreenValue = (10 - myValue) * 51
-
-		--print(intRedValue,intGreenValue)
-		love.graphics.setColor(intRedValue/255, intGreenValue/255, 0)
-		love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)
-
-		love.graphics.setColor(0, 0, 0)
-		love.graphics.print ("THR", intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))
-	end
-	if i == 2 or i == 3 or i== 4 then	-- WR
-		local myValue = objects.ball[i].catchskill
-		myValue = myValue - 80
-	
-		intGreenValue = myValue * 51
-		intRedValue = (10 - myValue) * 51
-		
-		love.graphics.setColor(intRedValue/255, intGreenValue/255, 0)
-		love.graphics.rectangle("fill",intPanelX,intPanelY,intPanelWidth, intPanelHeight)	
-		
-		love.graphics.setColor(0, 0, 0)
-		love.graphics.print ("CTH", intPanelX  + SclFactor(1) ,intPanelY  + SclFactor(1))
-	
-	end
-
-	
-	
 end
 
 function DrawMousePointer()
@@ -2519,11 +2452,11 @@ end
 function love.update(dt)
 	
 	-- print(strGameState)
-	
-	Slab.Update(dt)
-	
-	DrawSidebar()
+	Slab.Update(dt)		
+
 	DrawMessageBox()
+	DrawSidebar()
+
 	if strGameState ~= "CreditsBox" then
 		DrawCreditsButton()
 	end
@@ -2531,8 +2464,13 @@ function love.update(dt)
 	if strGameState == "CreditsBox" then
 		DrawCreditsBox()
 	end
+	
+		
 
 	SetCameraView()
+	
+
+	
 	
 	SetPlayerTargets()
 	
@@ -2761,6 +2699,11 @@ function love.draw()
 	if strGameState == "FormingUp" then
 		DrawRoutes()
 	end
+
+	if strGameState == "Looking" then
+		-- draw mouse
+		DrawMousePointer()
+	end		
 	
 	-- draw ball in flight
 	if strGameState == "Airborne" then
@@ -2768,15 +2711,9 @@ function love.draw()
 	
 	end
 	
-
-	if strGameState == "Looking" then
-		-- draw mouse
-		DrawMousePointer()
-	end
-	
 	camera:detach()
-	Slab.Draw()	
-
+	
+	Slab.Draw()
 end
 
 
