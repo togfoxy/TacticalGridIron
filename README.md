@@ -50,6 +50,10 @@ Use the NUMPAD or WADX keys or arrow keys to move around and avoid opposing play
 
 Keep your Quarterback away from the opposing team.
 
+When you move the mouse pointer around the field, a circle will shrink and expand showing you where the ball might land. 
+
+Throw distance affects accuracy. Short throws will be more accurate than long bombs.
+
 When you click the field with the mouse, a blue circle will show where you clicked. The Quarterback will instantly throw the ball.
 
 Throw the ball to your own team - but find someone that is open and can catch the ball safely.
@@ -57,8 +61,6 @@ Throw the ball to your own team - but find someone that is open and can catch th
 Quarterbacks have throwing accuracy. Factor this into your ball placement.
 
 If the ball lands too close to the opposing team then the ball will be "knocked down" by that team.
-
-Throw distance affects accuracy. Short throws will be more accurate than long bombs.
 
 Some players are good at catching and others are not.
 
