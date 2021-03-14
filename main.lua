@@ -123,7 +123,7 @@ end
 function SaveDatabase()
 	local fbdb = sqlite3.open(savedir .. "/" .. "lovefootball.db")
 	local strQuery
-	
+	local intTeam = 1	-- team 1 or team 2
 	-- print("Saving data")
 	
 	for i = 1,intNumOfPlayers do
@@ -132,7 +132,9 @@ function SaveDatabase()
 		
 		if intError > 0 then	-- 0 = success
 			-- the update failed so do an INSERT instead
-			strQuery = "INSERT INTO players VALUES(null,'noname',1,'" .. objects.ball[i].positionletters .."'," .. objects.ball[i].body:getMass() .. "," .. objects.ball[i].maxV .. "," .. objects.ball[i].catchskill .. "," .. objects.ball[i].balance .. ")"
+			
+			if i > 11 then intTeam = 2 end
+			strQuery = "INSERT INTO players VALUES(null,'noname'," .. intTeam .. ",'" .. objects.ball[i].positionletters .."'," .. objects.ball[i].body:getMass() .. "," .. objects.ball[i].maxV .. "," .. objects.ball[i].catchskill .. "," .. objects.ball[i].balance .. ")"
 			intError = fbdb:exec(strQuery)
 		end
 	end
