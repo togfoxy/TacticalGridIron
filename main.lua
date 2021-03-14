@@ -2,10 +2,13 @@
 --https://github.com/coding-jackalope/Slab
 --https://hump.readthedocs.io/en/latest/
 
-gameversion = "v0.14"
+gameversion = "v0.15"
 
 local Slab = require 'Slab'
 intSideBarWidth = 120
+
+require ("sqlite3.sqlite3")
+savedir = love.filesystem.getSaveDirectory( )
 
 Camera = require "hump.camera"
 fltCameraSmoothRate = 0.025	-- how fast does the camera zoom
@@ -66,7 +69,7 @@ mouseclick = {}
 mouseclick.x = nil
 mouseclick.y = nil
 
-intThrowSpeed = 40
+intThrowSpeed = 120
 
 intBallCarrier = 1		-- this is the player index that holds the ball. 0 means forming up and not yet snapped.
 fltPersonWidth = 1.5
@@ -99,7 +102,42 @@ imgPlayerImages[1] = love.graphics.newImage("blueplayer1.png")
 
 
 -- *******************************************************************************************************************
+function LoadDatabase()
+    --create/open database
+	local fbdb = sqlite3.open(savedir .. "/" .. "lovefootball.db")
+	local strQuery
+	
+	if fbdb then
+		-- create a bunch of tables knowing they will fail if they already exist
+		strQuery = "CREATE TABLE 'DBVersions' ('databaseversion' TEXT DEFAULT 0.15)"
+		fbdb:exec(strQuery)
+		
+		strQuery = "CREATE TABLE 'players' ('playersid' INTEGER,'name' TEXT,'TeamID' INTEGER,'posletters' TEXT,'mass' REAL,'maxv' REAL,'catch' REAL,'balance' REAL,PRIMARY KEY('playersid' AUTOINCREMENT))"
+		fbdb:exec(strQuery)
+		  
+		
+	end
+	fbdb:close()
+end
 
+function SaveDatabase()
+	local fbdb = sqlite3.open(savedir .. "/" .. "lovefootball.db")
+	local strQuery
+	
+	-- print("Saving data")
+	
+	for i = 1,intNumOfPlayers do
+		strQuery = "UPDATE players SET mass = " .. objects.ball[i].body:getMass() .. " WHERE posletters = '" .. objects.ball[i].positionletters .. "'"
+		intError = fbdb:exec(strQuery)
+		
+		if intError > 0 then	-- 0 = success
+			-- the update failed so do an INSERT instead
+			strQuery = "INSERT INTO players VALUES(null,'noname',1,'" .. objects.ball[i].positionletters .."'," .. objects.ball[i].body:getMass() .. "," .. objects.ball[i].maxV .. "," .. objects.ball[i].catchskill .. "," .. objects.ball[i].balance .. ")"
+			intError = fbdb:exec(strQuery)
+		end
+	end
+	fbdb:close()
+end
 function InstantiatePlayers()
 
 	love.physics.setMeter(1)
@@ -109,6 +147,7 @@ function InstantiatePlayers()
 	do
 		objects.ball[i] = {}
 		if i < 12 then
+			-- these are random locations
 			objects.ball[i].body = love.physics.newBody(world, SclFactor(love.math.random(25,60)), SclFactor(love.math.random(105,120)), "dynamic") --place the body in the center of the world and make it dynamic, so it can move around
 		else
 			objects.ball[i].body = love.physics.newBody(world, SclFactor(love.math.random(30,55)), SclFactor(love.math.random(85,110)), "dynamic") --place the body in the center of the world and make it dynamic, so it can move around
@@ -629,13 +668,13 @@ function newDrawPlayerStats()
 		if i == 1 then
 			local skillcolourcode = objects.ball[i].throwaccuracy - 90
 			Slab.SameLine()
-			Slab.Text("THROW",{Color = {RGBValues[skillcolourcode][1],RGBValues[skillcolourcode][2],RGBValues[skillcolourcode][3]}})
+			Slab.Text("THROW",{Color = {RGBValues[skillcolourcode][1]/255,RGBValues[skillcolourcode][2]/255,RGBValues[skillcolourcode][3]/255}})
 		end
 
 		if i == 2 or i == 3 or i== 4 then	-- WR
 			local skillcolourcode = objects.ball[i].catchskill - 80
 			Slab.SameLine()
-			Slab.Text("CATCH",{Color = {RGBValues[skillcolourcode][1],RGBValues[skillcolourcode][2],RGBValues[skillcolourcode][3]}})			
+			Slab.Text("CATCH",{Color = {RGBValues[skillcolourcode][1]/255,RGBValues[skillcolourcode][2]/255,RGBValues[skillcolourcode][3]/255}})			
 		end		
 		
 		-- 95 -> 97
@@ -651,14 +690,14 @@ function newDrawPlayerStats()
 			end
 		
 			Slab.SameLine()
-			Slab.Text("BALANCE",{Color = {RGBValues[skillcolourcode][1],RGBValues[skillcolourcode][2],RGBValues[skillcolourcode][3]}})					
+			Slab.Text("BALANCE",{Color = {RGBValues[skillcolourcode][1]/255,RGBValues[skillcolourcode][2]/255,RGBValues[skillcolourcode][3]/255}})					
 		end
 	
 		-- 14.9 -> 15.4
 		if i == 6 then -- TE
 			local skillcolourcode = round((objects.ball[i].maxV - 14.9) * 20,0)
 			Slab.SameLine()
-			Slab.Text("SPEED",{Color = {RGBValues[skillcolourcode][1],RGBValues[skillcolourcode][2],RGBValues[skillcolourcode][3]}})		
+			Slab.Text("SPEED",{Color = {RGBValues[skillcolourcode][1]/255,RGBValues[skillcolourcode][2]/255,RGBValues[skillcolourcode][3]/255}})		
 		end
 	
 		--12.3,13.8
@@ -668,10 +707,8 @@ function newDrawPlayerStats()
 			-- this is velocity * mass and then scaled to a value between 0 -> 10 inclusive
 			local skillcolourcode = round(((objects.ball[i].maxV * objects.ball[i].body:getMass())-1585)*0.020052)
 			Slab.SameLine()
-			Slab.Text("STRENGTH",{Color = {RGBValues[skillcolourcode][1],RGBValues[skillcolourcode][2],RGBValues[skillcolourcode][3]}})		
+			Slab.Text("STRENGTH",{Color = {RGBValues[skillcolourcode][1]/255,RGBValues[skillcolourcode][2]/255,RGBValues[skillcolourcode][3]/255}})		
 		end
-
-	
 	end
 end
 
@@ -716,6 +753,49 @@ function DrawMousePointer()
 		love.graphics.setColor(1, 1, 1,1) --set the drawing color
 		love.graphics.circle("line", intMouseX, intMouseY, SclFactor(fltPointerRadius))			
 		
+	end
+end
+
+function DrawRoutes()
+	-- for each WR, draw the route they will run
+	
+local previousX2
+local previousY2
+			
+	for i = 2,4 do	-- for each WR
+		for j = 1,9 do	-- for each coordinate in route (9 is an arbitrarily high number)
+			-- draw a line
+			
+			if playerroutes[i][j] == nil then break end	-- run out of pairs. This loop is done.
+			
+			
+			-- determining the end of the line is easier
+			X2 = playerroutes[i][j][1]	-- player i \ route j \ X coordinate
+			Y2 = playerroutes[i][j][2]
+			
+			-- now determine the start of this line
+			if j == 1 then
+				-- starting point is player's position
+				
+				X1 = objects.ball[i].body:getX() / fltScaleFactor -- need to return this to field coords
+				Y1 = objects.ball[i].body:getY() / fltScaleFactor
+			else
+				-- starting point is the end of the previous line
+				
+				X1 = previousX2
+				Y1 = previousY2
+	
+			end
+			
+			--print(X1 .. " " .. Y1 .. " " .. x2 .. " " .. y2 )
+		
+			-- now draw the line
+			love.graphics.setColor(1, 1, 1,1) --set the drawing color
+			love.graphics.line(SclFactor(X1),SclFactor(Y1),SclFactor(X2),SclFactor(Y2))
+			
+			previousX2 = X2
+			previousY2 = Y2
+		end
 	end
 end
 
@@ -1076,15 +1156,15 @@ function CheckAllRoutes()
 				-- do nothing
 			else
 				if playerroutes[i][j][1] < intLeftLineX then	-- player i, routej, x value
-					print("alpha")
+					--print("alpha")
 					playerroutes[i][j][1] = intLeftLineX + 3
 				end
 				if playerroutes[i][j][1] > intRightLineX then	-- player i, routej, x value
 					print("beta")
-					playerroutes[i][j][1] = intRightLineX - 3
+					--playerroutes[i][j][1] = intRightLineX - 3
 				end		
 				if playerroutes[i][j][2] < intTopPostY then	-- player i, routej, y value
-					print("charlie")
+					--print("charlie")
 					playerroutes[i][j][2] = intTopPostY + 3
 				end
 			end
@@ -1393,19 +1473,21 @@ function SetCornerBackTargets()
 end
 
 function SetOutsideLineBackersTargets()
+	local fltXYBuffer = 4	-- how close does the OLB approach his target
+	
 
 	for i = 17,18 do
 		if strGameState == "Looking" then
 			if i == 17 then	-- the leftmost OLB
 				intWR, WRdist = DetermineClosestEnemy(i, "WR", false)
 				if intWR > 0 then
-					SetPlayerTargetToAnotherPlayer(i,intWR, 5,5)
+					SetPlayerTargetToAnotherPlayer(i,intWR, fltXYBuffer,fltXYBuffer)
 				else
 					-- target anyone
 					intTarget, intTargetdist = DetermineClosestEnemy(i, "", false)
 					if intTarget > 0 then
 						-- move to 10 yards in front of that target
-						SetPlayerTargetToAnotherPlayer(i,intTarget, 5,5)
+						SetPlayerTargetToAnotherPlayer(i,intTarget, fltXYBuffer,fltXYBuffer)
 					else
 						--! will only happen if ALL enemies is down
 					end
@@ -1415,11 +1497,11 @@ function SetOutsideLineBackersTargets()
 				if i == 18 then
 					intTE, TEdist = DetermineClosestEnemy(i, "TE", false)
 					if intTE > 0 then	-- look for a TE
-						SetPlayerTargetToAnotherPlayer(i,intTE, 5,5)
+						SetPlayerTargetToAnotherPlayer(i,intTE, fltXYBuffer,fltXYBuffer)
 					else
 						intWR, WRdist = DetermineClosestEnemy(i, "WR", false)
 						if intWR > 0 then
-							SetPlayerTargetToAnotherPlayer(i,intWR, 5,5)
+							SetPlayerTargetToAnotherPlayer(i,intWR, fltXYBuffer,fltXYBuffer)
 						else
 							-- locate any  target
 							intTarget, intTargetdist = DetermineClosestEnemy(i, "", false)
@@ -1783,6 +1865,8 @@ function dotVectors(x1,y1,x2,y2)
 end
 
 function MoveAllPlayers(dtime)
+	local fltForceAdjustment = 2	-- tweak this to get fluid motion
+	local fltMaxVAdjustment= 4		-- tweak this to get fluid motion 
 
 	for i = 1,intNumOfPlayers do
 	
@@ -1833,7 +1917,7 @@ function MoveAllPlayers(dtime)
 			-- can't cut aceleration because that is the braking force and we don't want to disallow that
 			if dotVectors(playervelx, playervely,vectorxtotarget,vectorytotarget) > 0 then	-- > 0 means target is in front of player
 				-- if player is exceeding maxV then cancel force
-				if (playervelx > objects.ball[i].maxV) or (playervelx < (objects.ball[i].maxV * -1)) then
+				if (playervelx > objects.ball[i].maxV * fltMaxVAdjustment) or (playervelx < (objects.ball[i].maxV * -1 * fltMaxVAdjustment)) then
 					-- don't apply any force until vel drops down
 					intendedxforce = 0
 				end
@@ -1869,10 +1953,11 @@ function MoveAllPlayers(dtime)
 			--intendedxforce = intendedxforce * dtime * 20		-- pointless scaling up as long as maxF and maxV throttle this.
 			--intendedyforce = intendedyforce * dtime * 20
 	
+			intendedxforce = intendedxforce * fltForceAdjustment
+			intendedyforce = intendedyforce * fltForceAdjustment	
 			-- now we can apply force
 			objects.ball[i].body:applyForce(intendedxforce,intendedyforce)	
 
-			-- !!! need to NOT slow down if player is snapped and approaching target
 		end
 
 	end
@@ -2215,49 +2300,6 @@ function ResetGame()
 	end
 end
 
-function DrawRoutes()
-	-- for each WR, draw the route they will run
-	
-local previousX2
-local previousY2
-			
-	for i = 2,4 do	-- for each WR
-		for j = 1,9 do	-- for each coordinate in route (9 is an arbitrarily high number)
-			-- draw a line
-			
-			if playerroutes[i][j] == nil then break end	-- run out of pairs. This loop is done.
-			
-			
-			-- determining the end of the line is easier
-			X2 = playerroutes[i][j][1]	-- player i \ route j \ X coordinate
-			Y2 = playerroutes[i][j][2]
-			
-			-- now determine the start of this line
-			if j == 1 then
-				-- starting point is player's position
-				
-				X1 = objects.ball[i].body:getX() / fltScaleFactor -- need to return this to field coords
-				Y1 = objects.ball[i].body:getY() / fltScaleFactor
-			else
-				-- starting point is the end of the previous line
-				
-				X1 = previousX2
-				Y1 = previousY2
-	
-			end
-			
-			--print(X1 .. " " .. Y1 .. " " .. x2 .. " " .. y2 )
-		
-			-- now draw the line
-			love.graphics.setColor(1, 1, 1,1) --set the drawing color
-			love.graphics.line(SclFactor(X1),SclFactor(Y1),SclFactor(X2),SclFactor(Y2))
-			
-			previousX2 = X2
-			previousY2 = Y2
-		end
-	end
-end
-
 function AdjustCameraZoom(cam)
 	-- Receives a hump.Camera object, checks what the intended zoom is, what the real zoom is and then apply a new zoom with smoothing.
 	
@@ -2310,6 +2352,55 @@ function SetCameraView()
 	end
 	
 	AdjustCameraZoom(camera)
+end
+
+function beginContact(a, b, coll)
+	-- Gets called when two fixtures begin to overlap
+	aindex = a:getUserData()	-- this gets the number of the player in contact
+	bindex = b:getUserData()
+	
+	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
+	
+		-- don't do ANY contact for same team
+		if (aindex < 12 and bindex < 12) or (aindex > 11 and bindex > 11) then
+			-- same team. Do nothing!
+		else
+			if objects.ball[aindex].fallendown or objects.ball[bindex].fallendown then	-- if either player has fallen down then do nothing
+				-- do nothing
+			else
+				local chanceofnotfalling = objects.ball[aindex].balance
+				if intBallCarrier == aindex then chanceofnotfalling = 15 end -- huge penalty if you hold the ball
+				
+				-- RB's have a reduced chance of falling
+				if objects.ball[aindex].positionletters == "RB" then 
+					chanceofnotfalling = chanceofnotfalling * 2
+				end
+				
+				-- check if player A falls down
+				if love.math.random(1,100) > chanceofnotfalling then
+					-- oops - fell down!
+					objects.ball[aindex].fallendown = true
+					SetPlayersSensors(false, aindex)
+				end
+				
+				-- check if player B falls down
+				local chanceofnotfalling = objects.ball[bindex].balance
+				if intBallCarrier == bindex then chanceofnotfalling = 15 end -- huge penalty if you hold the ball
+				
+				-- RB's have a reduced chance of falling
+				if objects.ball[aindex].positionletters == "RB" then
+					chanceofnotfalling = chanceofnotfalling * 2
+				end
+				
+				if love.math.random(1,100) > chanceofnotfalling then
+					-- oops - fell down!
+					objects.ball[bindex].fallendown = true
+					SetPlayersSensors(false, bindex)
+				end	
+			end			
+		end
+	end
+
 end
 
 function love.mousereleased(x, y, button)
@@ -2370,57 +2461,13 @@ function love.mousereleased(x, y, button)
 	end
 end
 
-function beginContact(a, b, coll)
-	-- Gets called when two fixtures begin to overlap
-	aindex = a:getUserData()	-- this gets the number of the player in contact
-	bindex = b:getUserData()
-	
-	if strGameState == "Snapped" or strGameState == "Looking" or strGameState == "Airborne" or strGameState == "Running" then
-	
-		-- don't do ANY contact for same team
-		if (aindex < 12 and bindex < 12) or (aindex > 11 and bindex > 11) then
-			-- same team. Do nothing!
-		else
-			if objects.ball[aindex].fallendown or objects.ball[bindex].fallendown then	-- if either player has fallen down then do nothing
-				-- do nothing
-			else
-				local chanceofnotfalling = objects.ball[aindex].balance
-				if intBallCarrier == aindex then chanceofnotfalling = 15 end -- huge penalty if you hold the ball
-				
-				-- RB's have a reduced chance of falling
-				if objects.ball[aindex].positionletters == "RB" then 
-					chanceofnotfalling = chanceofnotfalling * 2
-				end
-				
-				-- check if player A falls down
-				if love.math.random(1,100) > chanceofnotfalling then
-					-- oops - fell down!
-					objects.ball[aindex].fallendown = true
-					SetPlayersSensors(false, aindex)
-				end
-				
-				-- check if player B falls down
-				local chanceofnotfalling = objects.ball[bindex].balance
-				if intBallCarrier == bindex then chanceofnotfalling = 15 end -- huge penalty if you hold the ball
-				
-				-- RB's have a reduced chance of falling
-				if objects.ball[aindex].positionletters == "RB" then
-					chanceofnotfalling = chanceofnotfalling * 2
-				end
-				
-				if love.math.random(1,100) > chanceofnotfalling then
-					-- oops - fell down!
-					objects.ball[bindex].fallendown = true
-					SetPlayersSensors(false, bindex)
-				end	
-			end			
-		end
-	end
+function love.quit()
 
-end
+	SaveDatabase()
+
+end	
 
 function love.load()
-
 
 	fltScaleFactor = 6	-- this is the ScaleFactor if window is 1920 / 1080
 	
@@ -2434,6 +2481,9 @@ function love.load()
 	void = love.window.setMode(SclFactor(120), SclFactor(150))
 	love.window.setTitle("Love football " .. gameversion)
 	
+	LoadDatabase()	
+	
+	--! if db exists then need to do something different
 	InstantiatePlayers()
 	
 	CustomisePlayers()
@@ -2447,10 +2497,15 @@ function love.load()
 	
 	strGameState = "FormingUp"	-- this is not necessary here but just making sure
 
+
+
+	 
+
+	
 end
 
 function love.update(dt)
-	
+
 	-- print(strGameState)
 	Slab.Update(dt)		
 
