@@ -7,8 +7,8 @@ gameversion = "v0.15"
 local Slab = require 'Slab'
 intSideBarWidth = 120
 
-require ("sqlite3.sqlite3")
-savedir = love.filesystem.getSaveDirectory( )
+--require ("sqlite3.sqlite3")
+--savedir = love.filesystem.getSaveDirectory( )
 
 Camera = require "hump.camera"
 fltCameraSmoothRate = 0.025	-- how fast does the camera zoom
@@ -2465,7 +2465,7 @@ end
 
 function love.quit()
 
-	SaveDatabase()
+	--SaveDatabase()
 
 end	
 
@@ -2483,7 +2483,7 @@ function love.load()
 	void = love.window.setMode(SclFactor(120), SclFactor(150))
 	love.window.setTitle("Love football " .. gameversion)
 	
-	LoadDatabase()	
+	--LoadDatabase()	
 	
 	--! if db exists then need to do something different
 	InstantiatePlayers()
