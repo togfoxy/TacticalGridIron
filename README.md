@@ -111,9 +111,9 @@ When your front line collapses you are about to be rushed (sacked). You'll need 
 
 Make the right decision and your team will score.
 
-Tournament Score
-================
+Note to developers
+==================
 
-Not to developers: the source code for the latest version is not available on this github repository and it does not reflect the exe provided in the zip file that is released.
+The source code for the latest version is not available on this github repository and it does not reflect the exe provided in the zip file that is released.
 
 
