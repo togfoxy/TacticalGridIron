@@ -67,6 +67,8 @@ Hold the CNTRL key to display an overlay
 
 You can only control the Quarterback. The rest of the players are bots.
 
+You get one drive. One chance. Make it count.
+
 Tournament Score
 ================
 
