@@ -13,7 +13,7 @@ Installation
 2. Unzip folder onto computer
 3. Right-click > Properties on the .EXE file 
 4. UNBLOCK the file (button at the bottom of the properties window) and click OK
-5. Run LFB.exe
+5. Run tacticalgridiron.exe
 
 Upgrade instructions
 ====================
